@@ -10,3 +10,5 @@ dist/
 build/
 coverage/
 temp/
+.tmp.driveupload/
+github-sync.log
