@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:6
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-build
+    ports:
+      - '5000:5000'
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/employee_management
+      - JWT_SECRET=production_secret_key_change_me
+      - JWT_EXPIRE=7d
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo_data:
