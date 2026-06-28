@@ -10,6 +10,15 @@ export const fetchEmployees = createAsyncThunk('employees/fetchAll', async (para
   }
 });
 
+export const fetchMyProfile = createAsyncThunk('employees/fetchMyProfile', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await employeeAPI.getMyProfile();
+    return data.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
+  }
+});
+
 export const fetchEmployee = createAsyncThunk('employees/fetchOne', async (id, { rejectWithValue }) => {
   try {
     const { data } = await employeeAPI.getOne(id);
@@ -58,6 +67,7 @@ const employeeSlice = createSlice({
       .addCase(fetchEmployees.pending, (state) => { state.loading = true; })
       .addCase(fetchEmployees.fulfilled, (state, action) => { state.loading = false; state.items = action.payload.data; state.pagination = action.payload.pagination; })
       .addCase(fetchEmployees.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      .addCase(fetchMyProfile.fulfilled, (state, action) => { state.loading = false; state.items = [action.payload]; state.current = action.payload; })
       .addCase(fetchEmployee.fulfilled, (state, action) => { state.current = action.payload; })
       .addCase(createEmployee.fulfilled, (state, action) => { state.items.unshift(action.payload); })
       .addCase(updateEmployee.fulfilled, (state, action) => {

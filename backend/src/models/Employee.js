@@ -26,7 +26,7 @@ const employeeSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'inactive', 'on-leave', 'terminated'], default: 'active' },
   profileImage: { type: String, default: '' },
 
-  reportingTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', default: null },
+  reportingTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', default: null, set: function(v) { return (v === '' || v === null || v === undefined) ? null : v; } },
   workShift: { type: String, enum: ['morning', 'afternoon', 'night', 'flexible'], default: 'morning' },
   probationEndDate: { type: Date, default: null },
   contractEndDate: { type: Date, default: null },

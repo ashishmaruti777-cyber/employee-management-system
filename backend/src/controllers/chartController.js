@@ -84,23 +84,118 @@ exports.getAttendanceTrend = async (req, res, next) => {
 
 exports.getDashboardStats = async (req, res, next) => {
   try {
+    const Employee = require('../models/Employee');
+    const Department = require('../models/Department');
+    const User = require('../models/User');
+
+    const isEmployeeOnly = req.user && req.user.role === 'employee';
+
+    if (isEmployeeOnly) {
+      const myEmployee = await Employee.findOne({ user: req.user.id }).populate('department', 'name');
+      if (!myEmployee) {
+        return res.json({ success: true, data: { totalEmployees: 1, totalDepartments: 0, totalUsers: 1, todayPresent: 0, todayAbsent: 0, todayLate: 0, todayOnLeave: 0, todayTotal: 0, monthlyExpense: 0, totalPayroll: 0, deptStats: [], recentEmployees: [], recentActivity: [] } });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const myRecord = await Attendance.findOne({ employee: myEmployee._id, date: { $gte: today, $lt: tomorrow } }).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+
+      const myMonthlyPayroll = await Payroll.aggregate([
+        { $match: { employee: myEmployee._id, month: today.getMonth() + 1, year: today.getFullYear() } },
+        { $group: { _id: null, total: { $sum: '$netSalary' } } },
+      ]);
+
+      const recentActivity = [];
+      if (myRecord) {
+        recentActivity.push({
+          name: `${myEmployee.firstName} ${myEmployee.lastName}`,
+          status: myRecord.status,
+          time: myRecord.clockIn ? new Date(myRecord.clockIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-',
+          department: myEmployee.department?.name || 'N/A',
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          totalEmployees: 1,
+          totalDepartments: 0,
+          totalUsers: 1,
+          todayPresent: myRecord?.status === 'present' ? 1 : 0,
+          todayAbsent: myRecord?.status === 'absent' ? 1 : 0,
+          todayLate: myRecord?.status === 'late' ? 1 : 0,
+          todayOnLeave: myRecord?.status === 'on-leave' ? 1 : 0,
+          todayTotal: myRecord ? 1 : 0,
+          monthlyExpense: myMonthlyPayroll[0]?.total || 0,
+          totalPayroll: myMonthlyPayroll[0]?.total || 0,
+          deptStats: [{ _id: myEmployee.department?.name || 'N/A', count: 1, avgSalary: myEmployee.salary }],
+          recentEmployees: [myEmployee],
+          recentActivity,
+        },
+      });
+    }
+
     const totalEmployees = await Employee.countDocuments({ status: 'active' });
-    const totalDepartments = await Department.countDocuments({ status: 'active' });
+    const totalDepartments = await Department.countDocuments();
+    const totalUsers = await User.countDocuments();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayAttendance = await Attendance.countDocuments({ date: today, status: { $in: ['present', 'late'] } });
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayRecords = await Attendance.find({ date: { $gte: today, $lt: tomorrow } }).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    const todayPresent = todayRecords.filter(r => r.status === 'present').length;
+    const todayAbsent = todayRecords.filter(r => r.status === 'absent').length;
+    const todayLate = todayRecords.filter(r => r.status === 'late').length;
+    const todayOnLeave = todayRecords.filter(r => r.status === 'on-leave').length;
+
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthlyExpense = await Payroll.aggregate([
       { $match: { month: today.getMonth() + 1, year: today.getFullYear() } },
       { $group: { _id: null, total: { $sum: '$netSalary' } } },
     ]);
+
+    const totalPayroll = await Payroll.aggregate([
+      { $group: { _id: null, total: { $sum: '$netSalary' } } },
+    ]);
+
+    const deptStats = await Employee.aggregate([
+      { $match: { status: 'active' } },
+      { $lookup: { from: 'departments', localField: 'department', foreignField: '_id', as: 'dept' } },
+      { $unwind: { path: '$dept', preserveNullAndEmptyArrays: true } },
+      { $group: { _id: '$dept.name', count: { $sum: 1 }, avgSalary: { $avg: '$salary' } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    const recentEmployees = await Employee.find().sort({ createdAt: -1 }).limit(5).select('firstName lastName employeeId position department status').populate('department', 'name');
+
+    const recentActivity = todayRecords.slice(0, 10).map(r => ({
+      name: `${r.employee?.firstName} ${r.employee?.lastName}`,
+      status: r.status,
+      time: r.clockIn ? new Date(r.clockIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-',
+      department: r.employee?.department?.name || 'N/A',
+    }));
+
     res.json({
       success: true,
       data: {
         totalEmployees,
         totalDepartments,
-        todayAttendance,
+        totalUsers,
+        todayPresent,
+        todayAbsent,
+        todayLate,
+        todayOnLeave,
+        todayTotal: todayRecords.length,
         monthlyExpense: monthlyExpense[0]?.total || 0,
+        totalPayroll: totalPayroll[0]?.total || 0,
+        deptStats,
+        recentEmployees,
+        recentActivity,
       },
     });
   } catch (error) {

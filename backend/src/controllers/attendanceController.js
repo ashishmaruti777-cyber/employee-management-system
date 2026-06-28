@@ -1,11 +1,26 @@
 const Attendance = require('../models/Attendance');
+const Employee = require('../models/Employee');
+
+const isEmployeeOnly = (req) => {
+  return req.user && req.user.role === 'employee';
+};
 
 exports.getAttendance = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, employee, date, status, startDate, endDate, department } = req.query;
     const query = {};
-    if (employee) query.employee = employee;
-    if (status) query.status = status;
+
+    if (isEmployeeOnly(req)) {
+      const myEmployee = await Employee.findOne({ user: req.user.id });
+      if (!myEmployee) {
+        return res.json({ success: true, data: [], pagination: { total: 0, page: 1, pages: 0, limit: parseInt(limit) } });
+      }
+      query.employee = myEmployee._id;
+    } else {
+      if (employee) query.employee = employee;
+      if (status) query.status = status;
+    }
+
     if (date) {
       const d = new Date(date);
       query.date = { $gte: new Date(d.setHours(0, 0, 0)), $lte: new Date(d.setHours(23, 59, 59)) };
@@ -15,7 +30,7 @@ exports.getAttendance = async (req, res, next) => {
     }
 
     let populateOptions = { path: 'employee', select: 'firstName lastName employeeId department' };
-    if (department) {
+    if (!isEmployeeOnly(req) && department) {
       populateOptions.match = { department };
     }
 
@@ -26,7 +41,7 @@ exports.getAttendance = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    if (department) {
+    if (!isEmployeeOnly(req) && department) {
       records = records.filter(r => r.employee !== null);
     }
 
@@ -44,13 +59,19 @@ exports.getAttendanceSummary = async (req, res, next) => {
       match.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
-    const Employee = require('../models/Employee');
-    const empMatch = {};
-    if (department) empMatch.department = department;
-
-    const employees = await Employee.find(empMatch).select('_id');
-    const empIds = employees.map(e => e._id);
-    match.employee = { $in: empIds };
+    if (isEmployeeOnly(req)) {
+      const myEmployee = await Employee.findOne({ user: req.user.id });
+      if (!myEmployee) {
+        return res.json({ success: true, data: { present: 0, absent: 0, late: 0, 'half-day': 0, 'on-leave': 0, holiday: 0, total: 0, totalOvertime: 0, avgOvertime: 0 } });
+      }
+      match.employee = myEmployee._id;
+    } else {
+      const empMatch = {};
+      if (department) empMatch.department = department;
+      const employees = await Employee.find(empMatch).select('_id');
+      const empIds = employees.map(e => e._id);
+      match.employee = { $in: empIds };
+    }
 
     const summary = await Attendance.aggregate([
       { $match: match },
@@ -78,17 +99,22 @@ exports.getAttendanceSummary = async (req, res, next) => {
 
 exports.clockIn = async (req, res, next) => {
   try {
-    const { employee } = req.body;
+    let employeeId = req.body.employee;
+    if (isEmployeeOnly(req)) {
+      const myEmployee = await Employee.findOne({ user: req.user.id });
+      if (!myEmployee) { res.status(404); throw new Error('Employee profile not found'); }
+      employeeId = myEmployee._id;
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    let record = await Attendance.findOne({ employee, date: today });
+    let record = await Attendance.findOne({ employee: employeeId, date: today });
     if (record) { res.status(400); throw new Error('Already clocked in today'); }
 
     const clockInTime = new Date();
     const hour = clockInTime.getHours();
     const status = hour > 9 ? 'late' : 'present';
 
-    record = await Attendance.create({ employee, date: today, clockIn: clockInTime, status });
+    record = await Attendance.create({ employee: employeeId, date: today, clockIn: clockInTime, status });
     res.status(201).json({ success: true, data: record });
   } catch (error) {
     next(error);
@@ -97,10 +123,15 @@ exports.clockIn = async (req, res, next) => {
 
 exports.clockOut = async (req, res, next) => {
   try {
-    const { employee } = req.body;
+    let employeeId = req.body.employee;
+    if (isEmployeeOnly(req)) {
+      const myEmployee = await Employee.findOne({ user: req.user.id });
+      if (!myEmployee) { res.status(404); throw new Error('Employee profile not found'); }
+      employeeId = myEmployee._id;
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const record = await Attendance.findOne({ employee, date: today });
+    const record = await Attendance.findOne({ employee: employeeId, date: today });
     if (!record) { res.status(404); throw new Error('No clock-in record found for today'); }
     if (record.clockOut) { res.status(400); throw new Error('Already clocked out'); }
 
@@ -159,7 +190,14 @@ exports.deleteAttendance = async (req, res, next) => {
 
 exports.getMonthlyAttendance = async (req, res, next) => {
   try {
-    const { employee, month, year } = req.query;
+    let { employee, month, year } = req.query;
+    if (isEmployeeOnly(req)) {
+      const myEmployee = await Employee.findOne({ user: req.user.id });
+      if (!myEmployee) {
+        return res.json({ success: true, data: [] });
+      }
+      employee = myEmployee._id;
+    }
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
     const records = await Attendance.find({ employee, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 });

@@ -25,11 +25,19 @@ export const authAPI = {
   register: (data) => API.post('/auth/register', data),
   getMe: () => API.get('/auth/me'),
   updateProfile: (data) => API.put('/auth/profile', data),
+  changePassword: (data) => API.put('/auth/change-password', data),
+  requestLogin: (data) => API.post('/auth/request-login', data),
+  checkRequest: (id) => API.get(`/auth/check-request/${id}`),
+  getLoginRequests: (params) => API.get('/auth/login-requests', { params }),
+  approveRequest: (id) => API.post(`/auth/approve/${id}`),
+  rejectRequest: (id, data) => API.post(`/auth/reject/${id}`, data),
+  getAuditLogs: (params) => API.get('/auth/audit-logs', { params }),
 };
 
 export const employeeAPI = {
   getAll: (params) => API.get('/employees', { params }),
   getOne: (id) => API.get(`/employees/${id}`),
+  getMyProfile: () => API.get('/employees/my-profile'),
   create: (data) => API.post('/employees', data),
   update: (id, data) => API.put(`/employees/${id}`, data),
   delete: (id) => API.delete(`/employees/${id}`),

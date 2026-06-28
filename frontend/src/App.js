@@ -16,6 +16,8 @@ import Shifts from './pages/Shifts';
 import Reports from './pages/Reports';
 import AdminPanel from './pages/AdminPanel';
 import Backup from './pages/Backup';
+import HRNotifications from './pages/HRNotifications';
+import SetPassword from './pages/SetPassword';
 
 const PrivateRoute = ({ children }) => {
   const { token } = useSelector((state) => state.auth);
@@ -40,6 +42,9 @@ function App() {
       <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
       <Route path="/admin" element={<PrivateRoute><AdminPanel /></PrivateRoute>} />
       <Route path="/backup" element={<PrivateRoute><Backup /></PrivateRoute>} />
+      <Route path="/hr-notifications" element={<PrivateRoute><HRNotifications /></PrivateRoute>} />
+      <Route path="/set-password" element={<PrivateRoute><SetPassword /></PrivateRoute>} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Employee = require('../models/Employee');
+const LoginRequest = require('../models/LoginRequest');
+const AuditLog = require('../models/AuditLog');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
 
@@ -130,6 +133,253 @@ exports.updateProfile = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(req.user.id, { name, email, avatar }, { new: true, runValidators: true });
     const userWithPermissions = await getUserWithPermissions(user);
     res.json({ success: true, data: userWithPermissions });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, forceChange } = req.body;
+    if (!newPassword) {
+      res.status(400);
+      throw new Error('New password is required');
+    }
+    if (newPassword.length < 6) {
+      res.status(400);
+      throw new Error('New password must be at least 6 characters');
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+    if (!forceChange) {
+      if (!currentPassword) {
+        res.status(400);
+        throw new Error('Current password is required');
+      }
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        res.status(400);
+        throw new Error('Current password is incorrect');
+      }
+    }
+    user.password = newPassword;
+    await user.save();
+    await AuditLog.create({
+      action: 'PASSWORD_CHANGED',
+      module: 'auth',
+      user: user._id,
+      userName: user.name,
+      details: forceChange ? `Password set for first time by ${user.name}` : `Password changed by ${user.name}`,
+      ipAddress: req.ip || '',
+      status: 'success',
+    });
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.requestLogin = async (req, res, next) => {
+  try {
+    const { mobile } = req.body;
+    if (!mobile) {
+      res.status(400);
+      throw new Error('Mobile number is required');
+    }
+    const cleanMobile = mobile.replace(/\s+/g, '').replace(/^0/, '');
+    const escapedMobile = cleanMobile.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const employee = await Employee.findOne({ phone: { $regex: escapedMobile, $options: 'i' } });
+    if (!employee) {
+      res.status(404);
+      throw new Error('No employee found with this mobile number');
+    }
+    let user = await User.findOne({ email: employee.email });
+    if (!user) {
+      user = await User.create({
+        name: `${employee.firstName} ${employee.lastName}`,
+        email: employee.email,
+        password: 'temp123456',
+        role: 'employee',
+        phone: employee.phone,
+      });
+    }
+    const pendingRequest = await LoginRequest.findOne({ employee: employee._id, status: 'pending' });
+    if (pendingRequest) {
+      res.status(400);
+      throw new Error('You already have a pending request. Please wait for HR approval.');
+    }
+    const rejectedRecent = await LoginRequest.findOne({
+      employee: employee._id, status: 'rejected',
+      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) },
+    });
+    if (rejectedRecent) {
+      res.status(403);
+      throw new Error('Your request was recently rejected. Please try again after 5 minutes.');
+    }
+    const loginRequest = await LoginRequest.create({
+      employee: employee._id,
+      user: user._id,
+      mobile: employee.phone,
+      employeeId: employee.employeeId,
+      name: `${employee.firstName} ${employee.lastName}`,
+      ipAddress: req.ip || req.connection?.remoteAddress || '',
+    });
+    await AuditLog.create({
+      action: 'LOGIN_REQUEST',
+      module: 'auth',
+      user: user._id,
+      userName: `${employee.firstName} ${employee.lastName}`,
+      details: `Login request sent to HR by ${employee.firstName} ${employee.lastName} (${employee.employeeId}) - Mobile: ${employee.phone}`,
+      ipAddress: req.ip || '',
+      status: 'pending',
+    });
+    res.json({
+      success: true,
+      message: 'Login request sent to HR. Please wait for approval.',
+      data: { requestId: loginRequest._id, name: `${employee.firstName} ${employee.lastName}` },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getLoginRequests = async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    const requests = await LoginRequest.find(filter)
+      .populate('employee', 'firstName lastName employeeId phone department')
+      .populate('hr', 'name email')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: requests });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.approveLoginRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const request = await LoginRequest.findById(id);
+    if (!request) {
+      res.status(404);
+      throw new Error('Login request not found');
+    }
+    if (request.status !== 'pending') {
+      res.status(400);
+      throw new Error('Request is already ' + request.status);
+    }
+    request.status = 'approved';
+    request.hr = req.user.id;
+    const hrUser = await User.findById(req.user.id);
+    request.hrName = hrUser ? hrUser.name : 'HR';
+    request.loginTime = new Date();
+    await request.save();
+    let user = await User.findById(request.user);
+    if (!user) {
+      user = await User.findOne({ email: { $exists: true } });
+    }
+    const userWithPermissions = await getUserWithPermissions(user);
+    const token = generateToken(user._id);
+    await AuditLog.create({
+      action: 'LOGIN_APPROVED',
+      module: 'auth',
+      user: req.user.id,
+      userName: hrUser ? hrUser.name : 'HR',
+      details: `HR ${hrUser ? hrUser.name : ''} approved login for ${request.name} (${request.employeeId})`,
+      ipAddress: req.ip || '',
+      status: 'success',
+    });
+    res.json({
+      success: true,
+      message: 'Login request approved',
+      data: { user: userWithPermissions, token, requestId: request._id },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.rejectLoginRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const request = await LoginRequest.findById(id);
+    if (!request) {
+      res.status(404);
+      throw new Error('Login request not found');
+    }
+    if (request.status !== 'pending') {
+      res.status(400);
+      throw new Error('Request is already ' + request.status);
+    }
+    request.status = 'rejected';
+    request.hr = req.user.id;
+    const hrUser = await User.findById(req.user.id);
+    request.hrName = hrUser ? hrUser.name : 'HR';
+    request.rejectReason = reason || 'Rejected by HR';
+    await request.save();
+    await AuditLog.create({
+      action: 'LOGIN_REJECTED',
+      module: 'auth',
+      user: req.user.id,
+      userName: hrUser ? hrUser.name : 'HR',
+      details: `HR ${hrUser ? hrUser.name : ''} rejected login for ${request.name} (${request.employeeId}). Reason: ${reason || 'Rejected by HR'}`,
+      ipAddress: req.ip || '',
+      status: 'failed',
+    });
+    res.json({
+      success: true,
+      message: 'Login request rejected',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.checkRequestStatus = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const request = await LoginRequest.findById(requestId)
+      .populate('employee', 'firstName lastName employeeId');
+    if (!request) {
+      res.status(404);
+      throw new Error('Request not found');
+    }
+    if (request.status === 'approved') {
+      let user = await User.findById(request.user);
+      if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+      }
+      const userWithPermissions = await getUserWithPermissions(user);
+      const token = generateToken(user._id);
+      res.json({ success: true, data: { status: 'approved', user: userWithPermissions, token } });
+    } else if (request.status === 'rejected') {
+      res.json({ success: true, data: { status: 'rejected', reason: request.rejectReason } });
+    } else {
+      res.json({ success: true, data: { status: 'pending' } });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAuditLogs = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, module: mod } = req.query;
+    const filter = {};
+    if (mod) filter.module = mod;
+    const total = await AuditLog.countDocuments(filter);
+    const logs = await AuditLog.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    res.json({ success: true, data: { logs, total, page: parseInt(page), pages: Math.ceil(total / limit) } });
   } catch (error) {
     next(error);
   }
