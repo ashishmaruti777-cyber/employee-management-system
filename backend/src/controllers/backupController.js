@@ -36,14 +36,16 @@ exports.createBackup = async (req, res, next) => {
     const stats = fs.statSync(backupFile);
     const totalDocs = collections.reduce((sum, col) => sum + (backupData[col.name]?.length || 0), 0);
 
-    await require('../models/AuditLog').create({
-      action: 'create',
-      entity: 'settings',
-      entityId: req.user._id,
-      entityName: `Database Backup: ${backupName}`,
-      performedBy: req.user._id,
-      changes: { backupName, size: stats.size, collections: collections.length },
-    });
+    try {
+      await require('../models/AuditLog').create({
+        action: 'create',
+        entity: 'settings',
+        entityId: req.user?._id || 'system',
+        entityName: `Database Backup: ${backupName}`,
+        performedBy: req.user?._id || 'system',
+        changes: { backupName, size: stats.size, collections: collections.length },
+      });
+    } catch (e) {}
 
     res.json({
       success: true,
