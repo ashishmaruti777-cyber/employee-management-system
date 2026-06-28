@@ -408,7 +408,7 @@ const AdminRoles = () => {
   };
 
   const handleEdit = (role) => {
-    setForm({ name: role.name, description: role.description || '', color: role.color || '#4f46e5', permissions: role.permissions || [] });
+    setForm({ name: role.name, description: role.description || '', color: role.color || '#4f46e5', permissions: JSON.parse(JSON.stringify(role.permissions || [])) });
     setEditId(role._id); setShowModal(true);
   };
 
