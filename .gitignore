@@ -11,4 +11,6 @@ build/
 coverage/
 temp/
 .tmp.driveupload/
+.tmp.drivedownload/
 github-sync.log
+backend/data/
