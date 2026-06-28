@@ -48,8 +48,11 @@ export const attendanceAPI = {
   clockIn: (data) => API.post('/attendance/clock-in', data),
   clockOut: (data) => API.post('/attendance/clock-out', data),
   create: (data) => API.post('/attendance', data),
+  bulkCreate: (data) => API.post('/attendance/bulk', data),
   update: (id, data) => API.put(`/attendance/${id}`, data),
+  delete: (id) => API.delete(`/attendance/${id}`),
   getMonthly: (params) => API.get('/attendance/monthly', { params }),
+  getSummary: (params) => API.get('/attendance/summary', { params }),
 };
 
 export const payrollAPI = {

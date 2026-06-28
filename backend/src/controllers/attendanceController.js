@@ -2,7 +2,7 @@ const Attendance = require('../models/Attendance');
 
 exports.getAttendance = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, employee, date, status, startDate, endDate } = req.query;
+    const { page = 1, limit = 10, employee, date, status, startDate, endDate, department } = req.query;
     const query = {};
     if (employee) query.employee = employee;
     if (status) query.status = status;
@@ -14,14 +14,63 @@ exports.getAttendance = async (req, res, next) => {
       query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
+    let populateOptions = { path: 'employee', select: 'firstName lastName employeeId department' };
+    if (department) {
+      populateOptions.match = { department };
+    }
+
     const total = await Attendance.countDocuments(query);
-    const records = await Attendance.find(query)
-      .populate({ path: 'employee', select: 'firstName lastName employeeId' })
-      .sort({ date: -1 })
+    let records = await Attendance.find(query)
+      .populate(populateOptions)
+      .sort({ date: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
+    if (department) {
+      records = records.filter(r => r.employee !== null);
+    }
+
     res.json({ success: true, data: records, pagination: { total, page: parseInt(page), pages: Math.ceil(total / limit), limit: parseInt(limit) } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAttendanceSummary = async (req, res, next) => {
+  try {
+    const { startDate, endDate, department } = req.query;
+    const match = {};
+    if (startDate && endDate) {
+      match.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const Employee = require('../models/Employee');
+    const empMatch = {};
+    if (department) empMatch.department = department;
+
+    const employees = await Employee.find(empMatch).select('_id');
+    const empIds = employees.map(e => e._id);
+    match.employee = { $in: empIds };
+
+    const summary = await Attendance.aggregate([
+      { $match: match },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+
+    const totalDays = await Attendance.aggregate([
+      { $match: match },
+      { $group: { _id: null, totalOvertime: { $sum: '$overtime' }, avgOvertime: { $avg: '$overtime' } } }
+    ]);
+
+    const result = {
+      present: 0, absent: 0, late: 0, 'half-day': 0, 'on-leave': 0, holiday: 0, total: 0,
+      totalOvertime: totalDays[0]?.totalOvertime || 0,
+      avgOvertime: totalDays[0]?.avgOvertime || 0,
+    };
+
+    summary.forEach(s => { result[s._id] = s.count; result.total += s.count; });
+
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -74,11 +123,35 @@ exports.createAttendance = async (req, res, next) => {
   }
 };
 
+exports.bulkCreateAttendance = async (req, res, next) => {
+  try {
+    const { records } = req.body;
+    if (!records || !Array.isArray(records) || records.length === 0) {
+      res.status(400);
+      throw new Error('Records array is required');
+    }
+    const created = await Attendance.insertMany(records);
+    res.status(201).json({ success: true, data: created, count: created.length });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.updateAttendance = async (req, res, next) => {
   try {
     const record = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!record) { res.status(404); throw new Error('Record not found'); }
     res.json({ success: true, data: record });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteAttendance = async (req, res, next) => {
+  try {
+    const record = await Attendance.findByIdAndDelete(req.params.id);
+    if (!record) { res.status(404); throw new Error('Record not found'); }
+    res.json({ success: true, data: {} });
   } catch (error) {
     next(error);
   }
