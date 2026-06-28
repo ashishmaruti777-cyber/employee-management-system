@@ -3,10 +3,10 @@ const { getPayrolls, createPayroll, updatePayroll, processPayroll, markPaid, get
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.route('/').get(getPayrolls).post(authorize('admin'), createPayroll);
+router.route('/').get(getPayrolls).post(authorize('super-admin'), createPayroll);
 router.get('/summary', getSalarySummary);
-router.put('/:id', authorize('admin'), updatePayroll);
-router.put('/:id/process', authorize('admin'), processPayroll);
-router.put('/:id/pay', authorize('admin'), markPaid);
+router.put('/:id', authorize('super-admin'), updatePayroll);
+router.put('/:id/process', authorize('super-admin'), processPayroll);
+router.put('/:id/pay', authorize('super-admin'), markPaid);
 
 module.exports = router;

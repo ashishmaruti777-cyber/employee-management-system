@@ -3,13 +3,13 @@ const { getShifts, getShift, createShift, updateShift, deleteShift, toggleShiftS
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.route('/').get(getShifts).post(authorize('admin', 'manager'), createShift);
-router.route('/:id').get(getShift).put(authorize('admin', 'manager'), updateShift).delete(authorize('admin'), deleteShift);
-router.put('/:id/toggle', authorize('admin'), toggleShiftStatus);
+router.route('/').get(getShifts).post(authorize('super-admin', 'hr-manager'), createShift);
+router.route('/:id').get(getShift).put(authorize('super-admin', 'hr-manager'), updateShift).delete(authorize('super-admin'), deleteShift);
+router.put('/:id/toggle', authorize('super-admin'), toggleShiftStatus);
 
 router.get('/assignments/list', getAssignments);
-router.post('/assignments', authorize('admin', 'manager'), createAssignment);
-router.put('/assignments/:id', authorize('admin', 'manager'), updateAssignment);
-router.delete('/assignments/:id', authorize('admin'), deleteAssignment);
+router.post('/assignments', authorize('super-admin', 'hr-manager'), createAssignment);
+router.put('/assignments/:id', authorize('super-admin', 'hr-manager'), updateAssignment);
+router.delete('/assignments/:id', authorize('super-admin'), deleteAssignment);
 
 module.exports = router;

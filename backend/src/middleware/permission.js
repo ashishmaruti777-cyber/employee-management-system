@@ -7,7 +7,7 @@ const checkPermission = (module, action) => {
         return res.status(401).json({ success: false, message: 'Not authorized' });
       }
 
-      if (req.user.role === 'admin') {
+      if (req.user.role === 'super-admin' || req.user.role === 'admin') {
         return next();
       }
 
@@ -38,7 +38,7 @@ const checkAnyPermission = (permissions) => {
         return res.status(401).json({ success: false, message: 'Not authorized' });
       }
 
-      if (req.user.role === 'admin') {
+      if (req.user.role === 'super-admin' || req.user.role === 'admin') {
         return next();
       }
 

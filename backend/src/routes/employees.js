@@ -3,7 +3,7 @@ const { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmploye
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.route('/').get(getEmployees).post(authorize('admin', 'manager'), createEmployee);
-router.route('/:id').get(getEmployee).put(authorize('admin', 'manager'), updateEmployee).delete(authorize('admin'), deleteEmployee);
+router.route('/').get(getEmployees).post(authorize('super-admin', 'hr-manager'), createEmployee);
+router.route('/:id').get(getEmployee).put(authorize('super-admin', 'hr-manager'), updateEmployee).delete(authorize('super-admin'), deleteEmployee);
 
 module.exports = router;
