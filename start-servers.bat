@@ -97,4 +97,12 @@ if errorlevel 1 (
     echo [%time%] Frontend restarted!
 )
 
+:: Check GitHub Auto-Sync
+tasklist /FI "WINDOWTITLE eq EMS-GitHub-Sync" 2>nul | findstr "powershell" >nul
+if errorlevel 1 (
+    echo [%time%] GitHub Auto-Sync DOWN! Restarting...
+    start "EMS-GitHub-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File C:\employee-management-system\auto-sync-github.ps1"
+    echo [%time%] GitHub Auto-Sync restarted!
+)
+
 goto health_loop
