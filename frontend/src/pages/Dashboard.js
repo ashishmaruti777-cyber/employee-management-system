@@ -25,9 +25,9 @@ const Dashboard = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
-  useEffect(() => { if (!autoRefresh) return; const i = setInterval(fetchData, 30000); return () => clearInterval(i); }, [autoRefresh, fetchData]);
+  useEffect(() => { if (!autoRefresh) return; const i = setInterval(fetchData, 60000); return () => clearInterval(i); }, [autoRefresh, fetchData]);
 
-  if (loading) return <div className="app-layout"><Sidebar /><div className="main-content"><Loading /></div></div>;
+  if (loading) return <div className="app-layout"><Sidebar /><div className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loading /></div></div>;
 
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });

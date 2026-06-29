@@ -12,15 +12,19 @@ const Attendance = () => {
   const { user } = useSelector((state) => state.auth);
   const isEmployee = user?.role === 'employee';
   const { items: myEmployees } = useSelector((state) => state.employees);
+  const { items: employees } = useSelector((state) => state.employees);
+  const { items: departments } = useSelector((state) => state.departments);
   const myProfile = isEmployee ? myEmployees[0] : null;
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [deptFilter, setDeptFilter] = useState('');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (isEmployee) {
       dispatch(fetchMyProfile());
     }
-    dispatch(fetchAttendance({ page: 1, limit: 500, startDate: selectedDate, endDate: selectedDate }));
+    dispatch(fetchAttendance({ page: 1, limit: 200, startDate: selectedDate, endDate: selectedDate }));
     dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
   }, [dispatch, selectedDate, isEmployee]);
 
@@ -38,8 +42,6 @@ const Attendance = () => {
     try {
       await dispatch(clockIn(myProfile._id)).unwrap();
       toast.success('Clocked in successfully!');
-      dispatch(fetchAttendance({ page: 1, limit: 500, startDate: selectedDate, endDate: selectedDate }));
-      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Clock in failed');
     }
@@ -49,8 +51,6 @@ const Attendance = () => {
     try {
       await dispatch(clockOut(myProfile._id)).unwrap();
       toast.success('Clocked out successfully!');
-      dispatch(fetchAttendance({ page: 1, limit: 500, startDate: selectedDate, endDate: selectedDate }));
-      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Clock out failed');
     }
@@ -213,11 +213,6 @@ const Attendance = () => {
   }
 
   // Admin/HR view - original code
-  const { items: employees } = useSelector((state) => state.employees);
-  const { items: departments } = useSelector((state) => state.departments);
-  const [deptFilter, setDeptFilter] = useState('');
-  const [search, setSearch] = useState('');
-
   const getRecordForEmployee = (empId) => {
     return records.find(r => r.employee?._id === empId || r.employee === empId);
   };
@@ -255,11 +250,9 @@ const Attendance = () => {
         await dispatch(updAtt({ id: existing._id, data: { status } })).unwrap();
       } else {
         const { createAttendance: createAtt } = await import('../slices/attendanceSlice');
-        await dispatch(createAtt({ employee: empId, date: selectedDate, status })).unwrap();
+        const newRecord = await dispatch(createAtt({ employee: empId, date: selectedDate, status })).unwrap();
       }
       toast.success(`Marked as ${status}!`);
-      dispatch(fetchAttendance({ page: 1, limit: 500, startDate: selectedDate, endDate: selectedDate }));
-      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Failed');
     }

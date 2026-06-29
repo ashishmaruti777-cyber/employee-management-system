@@ -116,7 +116,8 @@ exports.clockIn = async (req, res, next) => {
     const status = hour > 9 ? 'late' : 'present';
 
     record = await Attendance.create({ employee: employeeId, date: today, clockIn: clockInTime, status });
-    res.status(201).json({ success: true, data: record });
+    const populated = await Attendance.findById(record._id).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    res.status(201).json({ success: true, data: populated });
   } catch (error) {
     next(error);
   }
@@ -140,7 +141,8 @@ exports.clockOut = async (req, res, next) => {
     const diff = (record.clockOut - record.clockIn) / (1000 * 60 * 60);
     record.overtime = Math.max(0, diff - 8);
     await record.save();
-    res.json({ success: true, data: record });
+    const populated = await Attendance.findById(record._id).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    res.json({ success: true, data: populated });
   } catch (error) {
     next(error);
   }
@@ -148,11 +150,10 @@ exports.clockOut = async (req, res, next) => {
 
 exports.createAttendance = async (req, res, next) => {
   try {
-    console.log('Create attendance:', JSON.stringify(req.body));
     const record = await Attendance.create(req.body);
-    res.status(201).json({ success: true, data: record });
+    const populated = await Attendance.findById(record._id).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    res.status(201).json({ success: true, data: populated });
   } catch (error) {
-    console.error('Attendance error:', error.message);
     next(error);
   }
 };
@@ -175,7 +176,8 @@ exports.updateAttendance = async (req, res, next) => {
   try {
     const record = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!record) { res.status(404); throw new Error('Record not found'); }
-    res.json({ success: true, data: record });
+    const populated = await Attendance.findById(record._id).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    res.json({ success: true, data: populated });
   } catch (error) {
     next(error);
   }

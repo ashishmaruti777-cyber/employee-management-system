@@ -4,7 +4,7 @@ const Role = require('../models/Role');
 exports.getUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search = '', role = '', isActive } = req.query;
-    const query = {};
+    const query = { role: { $ne: 'employee' } };
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },

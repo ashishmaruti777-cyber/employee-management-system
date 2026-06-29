@@ -147,31 +147,29 @@ exports.getDashboardStats = async (req, res, next) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayRecords = await Attendance.find({ date: { $gte: today, $lt: tomorrow } }).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } });
+    const [todayRecords, monthlyExpense, totalPayroll, deptStats, recentEmployees] = await Promise.all([
+      Attendance.find({ date: { $gte: today, $lt: tomorrow } }).populate({ path: 'employee', select: 'firstName lastName employeeId department', populate: { path: 'department', select: 'name' } }),
+      Payroll.aggregate([
+        { $match: { month: today.getMonth() + 1, year: today.getFullYear() } },
+        { $group: { _id: null, total: { $sum: '$netSalary' } } },
+      ]),
+      Payroll.aggregate([
+        { $group: { _id: null, total: { $sum: '$netSalary' } } },
+      ]),
+      Employee.aggregate([
+        { $match: { status: 'active' } },
+        { $lookup: { from: 'departments', localField: 'department', foreignField: '_id', as: 'dept' } },
+        { $unwind: { path: '$dept', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: '$dept.name', count: { $sum: 1 }, avgSalary: { $avg: '$salary' } } },
+        { $sort: { count: -1 } },
+      ]),
+      Employee.find().sort({ createdAt: -1 }).limit(5).select('firstName lastName employeeId position department status').populate('department', 'name'),
+    ]);
+
     const todayPresent = todayRecords.filter(r => r.status === 'present').length;
     const todayAbsent = todayRecords.filter(r => r.status === 'absent').length;
     const todayLate = todayRecords.filter(r => r.status === 'late').length;
     const todayOnLeave = todayRecords.filter(r => r.status === 'on-leave').length;
-
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlyExpense = await Payroll.aggregate([
-      { $match: { month: today.getMonth() + 1, year: today.getFullYear() } },
-      { $group: { _id: null, total: { $sum: '$netSalary' } } },
-    ]);
-
-    const totalPayroll = await Payroll.aggregate([
-      { $group: { _id: null, total: { $sum: '$netSalary' } } },
-    ]);
-
-    const deptStats = await Employee.aggregate([
-      { $match: { status: 'active' } },
-      { $lookup: { from: 'departments', localField: 'department', foreignField: '_id', as: 'dept' } },
-      { $unwind: { path: '$dept', preserveNullAndEmptyArrays: true } },
-      { $group: { _id: '$dept.name', count: { $sum: 1 }, avgSalary: { $avg: '$salary' } } },
-      { $sort: { count: -1 } },
-    ]);
-
-    const recentEmployees = await Employee.find().sort({ createdAt: -1 }).limit(5).select('firstName lastName employeeId position department status').populate('department', 'name');
 
     const recentActivity = todayRecords.slice(0, 10).map(r => ({
       name: `${r.employee?.firstName} ${r.employee?.lastName}`,

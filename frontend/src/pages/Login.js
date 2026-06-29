@@ -88,7 +88,7 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)', backgroundSize: '40px 40px' }}>
+    <div className="login-page">
       <div className="login-bg-shape login-bg-shape-1"></div>
       <div className="login-bg-shape login-bg-shape-2"></div>
       <div className="login-bg-shape login-bg-shape-3"></div>

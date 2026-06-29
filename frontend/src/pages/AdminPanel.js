@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Sidebar from '../components/common/Sidebar';
 import Loading from '../components/common/Loading';
 import { fetchUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword } from '../slices/userSlice';
-import { fetchRoles } from '../slices/roleSlice';
+import { fetchRoles, createRole, updateRole, deleteRole, toggleRoleStatus } from '../slices/roleSlice';
 import { fetchDepartments, createDepartment, updateDepartment, deleteDepartment } from '../slices/departmentSlice';
 import { fetchEmployees } from '../slices/employeeSlice';
 import Modal, { ConfirmModal } from '../components/common/Modal';
@@ -486,7 +486,5 @@ const AdminRoles = () => {
     </div>
   );
 };
-
-import { createRole, updateRole, deleteRole, toggleRoleStatus } from '../slices/roleSlice';
 
 export default AdminPanel;
