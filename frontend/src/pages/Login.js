@@ -79,6 +79,7 @@ const Login = () => {
       const res = await authAPI.approveRequest(reqId);
       localStorage.setItem('token', res.data.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.data.user));
+      dispatch({ type: 'auth/login/fulfilled', payload: { user: res.data.data.user, token: res.data.data.token } });
       toast.success('Login approved!');
       navigate('/');
     } catch (err) {
@@ -87,7 +88,7 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)', backgroundSize: '40px 40px' }}>
       <div className="login-bg-shape login-bg-shape-1"></div>
       <div className="login-bg-shape login-bg-shape-2"></div>
       <div className="login-bg-shape login-bg-shape-3"></div>

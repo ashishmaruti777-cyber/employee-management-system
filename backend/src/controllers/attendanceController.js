@@ -105,6 +105,7 @@ exports.clockIn = async (req, res, next) => {
       if (!myEmployee) { res.status(404); throw new Error('Employee profile not found'); }
       employeeId = myEmployee._id;
     }
+    if (!employeeId) { res.status(400); throw new Error('Employee ID is required'); }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let record = await Attendance.findOne({ employee: employeeId, date: today });
@@ -147,9 +148,11 @@ exports.clockOut = async (req, res, next) => {
 
 exports.createAttendance = async (req, res, next) => {
   try {
+    console.log('Create attendance:', JSON.stringify(req.body));
     const record = await Attendance.create(req.body);
     res.status(201).json({ success: true, data: record });
   } catch (error) {
+    console.error('Attendance error:', error.message);
     next(error);
   }
 };

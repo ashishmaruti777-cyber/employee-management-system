@@ -10,7 +10,7 @@ const Sidebar = () => {
   const isEmployee = user?.role === 'employee';
 
   const hasPermission = (module, action = 'read') => {
-    if (!user) return false;
+    if (!user || !user.role) return false;
     if (user.role === 'admin' || user.role === 'super-admin') return true;
     if (!user.rolePermissions) return false;
     const modulePerm = user.rolePermissions.find((p) => p.module === module);
