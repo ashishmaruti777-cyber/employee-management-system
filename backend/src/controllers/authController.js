@@ -206,40 +206,20 @@ exports.requestLogin = async (req, res, next) => {
         phone: employee.phone,
       });
     }
-    const pendingRequest = await LoginRequest.findOne({ employee: employee._id, status: 'pending' });
-    if (pendingRequest) {
-      res.status(400);
-      throw new Error('You already have a pending request. Please wait for HR approval.');
-    }
-    const rejectedRecent = await LoginRequest.findOne({
-      employee: employee._id, status: 'rejected',
-      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) },
-    });
-    if (rejectedRecent) {
-      res.status(403);
-      throw new Error('Your request was recently rejected. Please try again after 5 minutes.');
-    }
-    const loginRequest = await LoginRequest.create({
-      employee: employee._id,
-      user: user._id,
-      mobile: employee.phone,
-      employeeId: employee.employeeId,
-      name: `${employee.firstName} ${employee.lastName}`,
-      ipAddress: req.ip || req.connection?.remoteAddress || '',
-    });
     await AuditLog.create({
-      action: 'LOGIN_REQUEST',
+      action: 'LOGIN',
       module: 'auth',
       user: user._id,
       userName: `${employee.firstName} ${employee.lastName}`,
-      details: `Login request sent to HR by ${employee.firstName} ${employee.lastName} (${employee.employeeId}) - Mobile: ${employee.phone}`,
+      details: `Mobile login by ${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
       ipAddress: req.ip || '',
-      status: 'pending',
+      status: 'success',
     });
+    const userWithPermissions = await getUserWithPermissions(user);
     res.json({
       success: true,
-      message: 'Login request sent to HR. Please wait for approval.',
-      data: { requestId: loginRequest._id, name: `${employee.firstName} ${employee.lastName}` },
+      message: 'Login successful',
+      data: { user: userWithPermissions, token: generateToken(user._id) },
     });
   } catch (error) {
     next(error);

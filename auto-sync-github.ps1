@@ -1,5 +1,5 @@
-$projectPath = "C:\employee-management-system"
-$logFile = "C:\employee-management-system\github-sync.log"
+$projectPath = "G:\Other computers\My PC\employee-management-system"
+$logFile = "G:\Other computers\My PC\employee-management-system\github-sync.log"
 
 function Write-Log {
     param([string]$Message)

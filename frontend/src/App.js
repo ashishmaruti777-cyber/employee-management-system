@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import Employees from './pages/Employees';
-import Departments from './pages/Departments';
-import Attendance from './pages/Attendance';
-import Payroll from './pages/Payroll';
-import Settings from './pages/Settings';
-import Roles from './pages/Roles';
-import Users from './pages/Users';
-import Shifts from './pages/Shifts';
-import Reports from './pages/Reports';
-import AdminPanel from './pages/AdminPanel';
-import Backup from './pages/Backup';
-import HRNotifications from './pages/HRNotifications';
-import SetPassword from './pages/SetPassword';
 import { getMe } from './slices/authSlice';
 import { fetchEmployees } from './slices/employeeSlice';
 import { fetchDepartments } from './slices/departmentSlice';
+import Loading from './components/common/Loading';
+
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Departments = lazy(() => import('./pages/Departments'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const Payroll = lazy(() => import('./pages/Payroll'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Roles = lazy(() => import('./pages/Roles'));
+const Users = lazy(() => import('./pages/Users'));
+const Shifts = lazy(() => import('./pages/Shifts'));
+const Reports = lazy(() => import('./pages/Reports'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const Backup = lazy(() => import('./pages/Backup'));
+const SetPassword = lazy(() => import('./pages/SetPassword'));
 
 const PrivateRoute = ({ children }) => {
   const { token } = useSelector((state) => state.auth);
@@ -54,26 +55,27 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/employees" element={<PrivateRoute><Employees /></PrivateRoute>} />
-      <Route path="/departments" element={<PrivateRoute><Departments /></PrivateRoute>} />
-      <Route path="/attendance" element={<PrivateRoute><Attendance /></PrivateRoute>} />
-      <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
-      <Route path="/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
-      <Route path="/users" element={<PrivateRoute><Users /></PrivateRoute>} />
-      <Route path="/shifts" element={<PrivateRoute><Shifts /></PrivateRoute>} />
-      <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-      <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
-      <Route path="/admin" element={<PrivateRoute><AdminPanel /></PrivateRoute>} />
-      <Route path="/backup" element={<PrivateRoute><Backup /></PrivateRoute>} />
-      <Route path="/hr-notifications" element={<PrivateRoute><HRNotifications /></PrivateRoute>} />
-      <Route path="/set-password" element={<PrivateRoute><SetPassword /></PrivateRoute>} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/employees" element={<PrivateRoute><Employees /></PrivateRoute>} />
+        <Route path="/departments" element={<PrivateRoute><Departments /></PrivateRoute>} />
+        <Route path="/attendance" element={<PrivateRoute><Attendance /></PrivateRoute>} />
+        <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
+        <Route path="/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
+        <Route path="/users" element={<PrivateRoute><Users /></PrivateRoute>} />
+        <Route path="/shifts" element={<PrivateRoute><Shifts /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+        <Route path="/admin" element={<PrivateRoute><AdminPanel /></PrivateRoute>} />
+        <Route path="/backup" element={<PrivateRoute><Backup /></PrivateRoute>} />
+        <Route path="/set-password" element={<PrivateRoute><SetPassword /></PrivateRoute>} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
