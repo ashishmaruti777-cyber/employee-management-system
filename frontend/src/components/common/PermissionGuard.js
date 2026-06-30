@@ -9,7 +9,7 @@ const PermissionGuard = ({ module, action = 'read', children, fallback = null })
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'super-admin' || user.role === 'admin') {
     return children;
   }
 

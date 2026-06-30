@@ -5,7 +5,7 @@ export const usePermission = () => {
 
   const hasPermission = (module, action = 'read') => {
     if (!user) return false;
-    if (user.role === 'admin') return true;
+    if (user.role === 'super-admin' || user.role === 'admin') return true;
     if (!user.rolePermissions) return false;
     const modulePerm = user.rolePermissions.find((p) => p.module === module);
     return modulePerm && modulePerm.actions.includes(action);
@@ -13,7 +13,7 @@ export const usePermission = () => {
 
   const hasAnyPermission = (permissions) => {
     if (!user) return false;
-    if (user.role === 'admin') return true;
+    if (user.role === 'super-admin' || user.role === 'admin') return true;
     if (!user.rolePermissions) return false;
     return permissions.some(({ module, action }) => hasPermission(module, action));
   };

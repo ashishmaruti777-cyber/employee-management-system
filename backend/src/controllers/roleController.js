@@ -83,6 +83,10 @@ exports.updateRole = async (req, res, next) => {
 
     const role = await Role.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     
+    if (req.body.name && req.body.name !== oldRole.name) {
+      await User.updateMany({ role: oldRole.slug }, { role: role.slug });
+    }
+    
     const oldValues = {};
     const newValues = {};
     if (req.body.name && req.body.name !== oldRole.name) {
