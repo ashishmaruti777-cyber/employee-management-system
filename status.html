@@ -11,6 +11,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .header{text-align:center;margin-bottom:30px}
 .header h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#a5b4fc,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
 .header p{color:#64748b;font-size:0.82rem}
+.url-box{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.url-box input{flex:1;background:transparent;border:none;color:#e2e8f0;font-size:0.82rem;font-family:monospace;outline:none}
+.url-box button{padding:6px 14px;border-radius:8px;border:none;background:#6366f1;color:white;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap}
+.url-box button:hover{background:#818cf8}
 .overall{background:#1e293b;border:2px solid #334155;border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;transition:all 0.5s}
 .overall.healthy{border-color:#10b981;box-shadow:0 0 40px rgba(16,185,129,0.2)}
 .overall.degraded{border-color:#f59e0b;box-shadow:0 0 40px rgba(245,158,11,0.2)}
@@ -21,6 +25,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .overall-text.degraded{color:#f59e0b}
 .overall-text.down{color:#ef4444}
 .overall-time{color:#64748b;font-size:0.75rem;margin-top:4px}
+.connect-section{background:linear-gradient(135deg,#1e293b,#2d1b69);border:2px solid #6366f1;border-radius:16px;padding:24px;text-align:center;margin-bottom:20px;display:none}
+.connect-section.show{display:block;animation:fadeIn 0.5s}
+.connect-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;padding:14px 32px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:10px;margin-bottom:12px}
+.connect-btn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(99,102,241,0.4)}
+.connect-btn:active{transform:scale(0.98)}
+.connect-btn.loading{opacity:0.7;pointer-events:none}
+.connect-btn .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;display:none}
+.connect-btn.loading .spinner{display:block}
+.connect-btn .btn-text{display:inline}
+.connect-btn.loading .btn-text{display:none}
+.connect-info{color:#94a3b8;font-size:0.8rem;margin-top:8px}
+.connect-status{margin-top:12px;padding:10px;border-radius:8px;font-size:0.85rem;font-weight:600;display:none}
+.connect-status.success{display:block;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)}
+.connect-status.error{display:block;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.connect-status.trying{display:block;background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3)}
+.manual-section{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:20px}
+.manual-title{font-size:0.85rem;font-weight:700;color:#94a3b8;margin-bottom:10px}
+.manual-steps{list-style:none;counter-reset:step}
+.manual-steps li{counter-increment:step;padding:6px 0;font-size:0.8rem;color:#cbd5e1;position:relative;padding-left:28px}
+.manual-steps li::before{content:counter(step);position:absolute;left:0;width:20px;height:20px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#94a3b8}
+.manual-steps code{background:#334155;padding:2px 6px;border-radius:4px;font-size:0.75rem;color:#a5b4fc}
 .cards{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
 .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-between;transition:all 0.3s}
 .card.up{border-left:4px solid #10b981}
@@ -38,10 +63,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .card-status.down{background:rgba(239,68,68,0.15);color:#ef4444}
 .card-status.checking{background:rgba(99,102,241,0.15);color:#6366f1}
 .footer{text-align:center;color:#475569;font-size:0.7rem;margin-top:10px}
-.pulse{animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.spinner{width:14px;height:14px;border:2px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
 .history{margin-top:16px}
 .history-title{font-size:0.8rem;font-weight:600;color:#94a3b8;margin-bottom:8px}
 .history-row{display:flex;gap:4px;align-items:end;height:40px}
@@ -49,10 +70,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .history-bar.up{background:#10b981}
 .history-bar.down{background:#ef4444}
 .history-bar.unknown{background:#334155}
-.url-box{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.url-box input{flex:1;background:transparent;border:none;color:#e2e8f0;font-size:0.82rem;font-family:monospace;outline:none}
-.url-box button{padding:6px 14px;border-radius:8px;border:none;background:#6366f1;color:white;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap}
-.url-box button:hover{background:#818cf8}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.spinner{width:14px;height:14px;border:2px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,0.3)}50%{box-shadow:0 0 40px rgba(99,102,241,0.6)}}
+.connecting-glow{animation:glow 1.5s infinite}
 </style>
 </head>
 <body>
@@ -63,49 +87,76 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="url-box">
-    <span style="font-size:0.8rem;color:#64748b">📡</span>
+    <span style="font-size:0.8rem;color:#64748b">&#128225;</span>
     <input id="serverUrl" value="https://plural-majorette-aftermath.ngrok-free.dev" placeholder="Enter server URL...">
     <button onclick="checkAll()">Check</button>
   </div>
 
   <div class="overall checking" id="overall">
-    <div class="overall-icon">🔍</div>
+    <div class="overall-icon">&#128269;</div>
     <div class="overall-text" style="color:#6366f1">Checking servers...</div>
     <div class="overall-time pulse" id="overallTime">Please wait</div>
+  </div>
+
+  <!-- Connect Section - shows when server is offline -->
+  <div class="connect-section" id="connectSection">
+    <div style="font-size:2rem;margin-bottom:8px">&#128268;</div>
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;color:#e2e8f0">Server Offline</div>
+    <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:16px">Click below to try connecting</div>
+    
+    <button class="connect-btn" id="connectBtn" onclick="connectToServer()">
+      <div class="spinner"></div>
+      <span class="btn-text">&#128279; Connect to Server</span>
+    </button>
+    
+    <div class="connect-status" id="connectStatus"></div>
+    <div class="connect-info">Will try 5 times with 3 second gaps</div>
+  </div>
+
+  <!-- Manual Steps - shows when offline -->
+  <div class="manual-section" id="manualSection" style="display:none">
+    <div class="manual-title">&#128187; Manual Server Start Steps</div>
+    <ol class="manual-steps">
+      <li>Open terminal in project folder</li>
+      <li>Run: <code>cd backend</code></li>
+      <li>Run: <code>npm start</code></li>
+      <li>Open another terminal, run: <code>ngrok http 5000</code></li>
+      <li>Copy ngrok URL and paste above, then click Check</li>
+    </ol>
   </div>
 
   <div class="cards" id="cards">
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">🖥️</div>
+        <div class="card-icon checking">&#128421;&#65039;</div>
         <div><div class="card-name">Backend API</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">🗄️</div>
+        <div class="card-icon checking">&#128450;&#65039;</div>
         <div><div class="card-name">MongoDB Atlas</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">🌐</div>
+        <div class="card-icon checking">&#127760;</div>
         <div><div class="card-name">Frontend</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">📡</div>
+        <div class="card-icon checking">&#128225;</div>
         <div><div class="card-name">Ngrok Tunnel</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">💾</div>
+        <div class="card-icon checking">&#128190;</div>
         <div><div class="card-name">Auto Backup</div><div class="card-detail">12 PM & 12 AM Daily</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
@@ -118,13 +169,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="footer">
-    <p>Auto-refreshes every 30 seconds • Click "Check" for manual refresh</p>
+    <p>Auto-refreshes every 30 seconds &bull; Click "Check" for manual refresh</p>
   </div>
 </div>
 
 <script>
 const historyData = JSON.parse(localStorage.getItem('ems_history') || '[]');
 let serverUrl = '';
+let isConnecting = false;
+let autoCheckInterval = null;
 
 function saveHistory(status) {
   historyData.push({ time: Date.now(), status });
@@ -139,7 +192,7 @@ function renderHistory() {
   el.innerHTML = historyData.map(h => {
     const color = h.status === 'up' ? 'up' : h.status === 'down' ? 'down' : 'unknown';
     const height = h.status === 'up' ? 30 + Math.random() * 10 : h.status === 'down' ? 10 : 20;
-    return `<div class="history-bar ${color}" style="height:${height}px" title="${new Date(h.time).toLocaleTimeString()} - ${h.status}"></div>`;
+    return '<div class="history-bar ' + color + '" style="height:' + height + 'px" title="' + new Date(h.time).toLocaleTimeString() + ' - ' + h.status + '"></div>';
   }).join('');
 }
 
@@ -147,28 +200,104 @@ function setCard(index, status, detail) {
   const cards = document.querySelectorAll('.card');
   if (!cards[index]) return;
   const card = cards[index];
-  card.className = `card ${status}`;
+  card.className = 'card ' + status;
   const icon = card.querySelector('.card-icon');
-  icon.className = `card-icon ${status}`;
+  icon.className = 'card-icon ' + status;
   const statusEl = card.querySelector('.card-status');
-  statusEl.className = `card-status ${status}`;
+  statusEl.className = 'card-status ' + status;
   if (status === 'up') {
-    statusEl.innerHTML = '● Online';
+    statusEl.innerHTML = '&#9679; Online';
     if (detail) card.querySelector('.card-detail').textContent = detail;
   } else {
-    statusEl.innerHTML = '● Offline';
+    statusEl.innerHTML = '&#9679; Offline';
     if (detail) card.querySelector('.card-detail').textContent = detail;
   }
 }
 
 function setOverall(status, text) {
   const el = document.getElementById('overall');
-  el.className = `overall ${status}`;
-  el.querySelector('.overall-icon').textContent = status === 'healthy' ? '✅' : status === 'degraded' ? '⚠️' : '🔴';
+  el.className = 'overall ' + status;
+  el.querySelector('.overall-icon').textContent = status === 'healthy' ? '&#9989;' : status === 'degraded' ? '&#9888;&#65039;' : '&#128308;';
   const textEl = el.querySelector('.overall-text');
   textEl.textContent = text;
-  textEl.className = `overall-text ${status}`;
+  textEl.className = 'overall-text ' + status;
   document.getElementById('overallTime').textContent = 'Last checked: ' + new Date().toLocaleTimeString();
+  
+  // Show/hide connect section
+  const connectSection = document.getElementById('connectSection');
+  const manualSection = document.getElementById('manualSection');
+  if (status === 'down') {
+    connectSection.classList.add('show');
+    manualSection.style.display = 'block';
+  } else {
+    connectSection.classList.remove('show');
+    manualSection.style.display = 'none';
+  }
+}
+
+async function tryConnect(url, attempt) {
+  const connectStatus = document.getElementById('connectStatus');
+  const connectBtn = document.getElementById('connectBtn');
+  
+  connectStatus.className = 'connect-status trying';
+  connectStatus.textContent = 'Trying attempt ' + attempt + '/5...';
+  
+  try {
+    // Try the connect endpoint first
+    const res = await fetch(url + '/api/status/connect', { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    
+    if (data.success) {
+      connectStatus.className = 'connect-status success';
+      connectStatus.innerHTML = '&#9989; Connected! Server is running.<br>Platform: ' + (data.server ? data.server.platform : 'unknown') + ' | Node: ' + (data.server ? data.server.nodeVersion : 'unknown');
+      connectBtn.classList.remove('loading');
+      checkAll(); // Refresh status
+      return true;
+    }
+  } catch (e) {
+    // Try root URL as fallback
+    try {
+      const res = await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) });
+      connectStatus.className = 'connect-status success';
+      connectStatus.innerHTML = '&#9989; Server reachable! Checking status...';
+      connectBtn.classList.remove('loading');
+      checkAll();
+      return true;
+    } catch (e2) {
+      connectStatus.className = 'connect-status error';
+      connectStatus.textContent = 'Attempt ' + attempt + '/5 failed - Server not reachable';
+    }
+  }
+  return false;
+}
+
+async function connectToServer() {
+  if (isConnecting) return;
+  isConnecting = true;
+  
+  const connectBtn = document.getElementById('connectBtn');
+  const connectStatus = document.getElementById('connectStatus');
+  
+  connectBtn.classList.add('loading');
+  connectBtn.classList.add('connecting-glow');
+  serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
+  
+  let connected = false;
+  for (let i = 1; i <= 5; i++) {
+    connected = await tryConnect(serverUrl, i);
+    if (connected) break;
+    if (i < 5) await new Promise(r => setTimeout(r, 3000));
+  }
+  
+  connectBtn.classList.remove('loading');
+  connectBtn.classList.remove('connecting-glow');
+  
+  if (!connected) {
+    connectStatus.className = 'connect-status error';
+    connectStatus.innerHTML = '&#10060; Could not connect after 5 attempts.<br>Please start server manually using steps below.';
+  }
+  
+  isConnecting = false;
 }
 
 async function checkAll() {
@@ -179,9 +308,9 @@ async function checkAll() {
   try {
     const res = await fetch(serverUrl + '/api/status', { signal: AbortSignal.timeout(8000) });
     const data = await res.json();
-    if (data.checks.backend.status === 'up') { setCard(0, 'up', `RAM: ${data.checks.backend.memory} • Uptime: ${Math.round(data.checks.backend.uptime)}s`); upCount++; }
+    if (data.checks.backend.status === 'up') { setCard(0, 'up', 'RAM: ' + data.checks.backend.memory + ' | Uptime: ' + Math.round(data.checks.backend.uptime) + 's'); upCount++; }
     else setCard(0, 'down', 'Backend not responding');
-    if (data.checks.mongodb.status === 'up') { setCard(1, 'up', `State: ${data.checks.mongodb.state}`); upCount++; }
+    if (data.checks.mongodb.status === 'up') { setCard(1, 'up', 'State: ' + data.checks.mongodb.state); upCount++; }
     else setCard(1, 'down', 'Database disconnected');
   } catch (e) {
     setCard(0, 'down', 'Cannot reach server');
@@ -191,7 +320,7 @@ async function checkAll() {
   // Check Frontend
   try {
     const res = await fetch(serverUrl, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
-    setCard(2, 'up', 'Port 3000 • React App');
+    setCard(2, 'up', 'Port 3000 | React App');
     upCount++;
   } catch (e) {
     setCard(2, 'down', 'Frontend unreachable');
@@ -222,13 +351,13 @@ async function checkAll() {
 // Load saved URL
 const savedUrl = localStorage.getItem('ems_server_url');
 if (savedUrl) document.getElementById('serverUrl').value = savedUrl;
-document.getElementById('serverUrl').addEventListener('change', (e) => {
+document.getElementById('serverUrl').addEventListener('change', function(e) {
   localStorage.setItem('ems_server_url', e.target.value);
 });
 
 renderHistory();
 checkAll();
-setInterval(checkAll, 30000);
+autoCheckInterval = setInterval(checkAll, 30000);
 </script>
 </body>
 </html>

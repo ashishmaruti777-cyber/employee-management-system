@@ -27,6 +27,7 @@ app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/backup', require('./routes/backup'));
+app.use('/api/status', require('./routes/status'));
 
 const frontendPath = path.join(__dirname, '../../frontend/build');
 app.use(express.static(frontendPath));
