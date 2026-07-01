@@ -87,31 +87,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="url-box">
-    <span style="font-size:0.8rem;color:#64748b">&#128225;</span>
+    <span style="font-size:0.8rem;color:#64748b">📡</span>
     <input id="serverUrl" value="https://plural-majorette-aftermath.ngrok-free.dev" placeholder="Enter server URL...">
     <button onclick="checkAll()">Check</button>
   </div>
 
   <div class="overall checking" id="overall">
-    <div class="overall-icon">&#128269;</div>
+    <div class="overall-icon">🔍</div>
     <div class="overall-text" style="color:#6366f1">Checking servers...</div>
     <div class="overall-time pulse" id="overallTime">Please wait</div>
   </div>
 
   <div class="connect-section" id="connectSection">
-    <div style="font-size:2rem;margin-bottom:8px">&#128268;</div>
+    <div style="font-size:2rem;margin-bottom:8px">🔌</div>
     <div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;color:#e2e8f0">Server Offline</div>
     <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:16px">Click below to try connecting</div>
     <button class="connect-btn" id="connectBtn" onclick="connectToServer()">
       <div class="spinner"></div>
-      <span class="btn-text">&#128279; Connect to Server</span>
+      <span class="btn-text">🔗 Connect to Server</span>
     </button>
     <div class="connect-status" id="connectStatus"></div>
     <div class="connect-info">Will try 5 times with 3 second gaps</div>
   </div>
 
   <div class="manual-section" id="manualSection" style="display:none">
-    <div class="manual-title">&#128187; Manual Server Start Steps</div>
+    <div class="manual-title">💻 Manual Server Start Steps</div>
     <ol class="manual-steps">
       <li>Open terminal in project folder</li>
       <li>Run: <code>cd backend</code></li>
@@ -124,35 +124,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="cards" id="cards">
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">&#128421;&#65039;</div>
+        <div class="card-icon checking">🖥️</div>
         <div><div class="card-name">Backend API</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">&#128450;&#65039;</div>
+        <div class="card-icon checking">🗄️</div>
         <div><div class="card-name">MongoDB Atlas</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">&#127760;</div>
+        <div class="card-icon checking">🌐</div>
         <div><div class="card-name">Frontend</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">&#128225;</div>
+        <div class="card-icon checking">📡</div>
         <div><div class="card-name">Ngrok Tunnel</div><div class="card-detail">Checking...</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
     </div>
     <div class="card checking">
       <div class="card-left">
-        <div class="card-icon checking">&#128190;</div>
+        <div class="card-icon checking">💾</div>
         <div><div class="card-name">Auto Backup</div><div class="card-detail">12 PM & 12 AM Daily</div></div>
       </div>
       <div class="card-status checking"><span class="spinner"></span></div>
@@ -165,7 +165,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="footer">
-    <p>Auto-refreshes every 30 seconds &bull; Click "Check" for manual refresh</p>
+    <p>Auto-refreshes every 30 seconds · Click "Check" for manual refresh</p>
   </div>
 </div>
 
@@ -173,7 +173,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 var historyData = JSON.parse(localStorage.getItem('ems_history') || '[]');
 var serverUrl = '';
 var isConnecting = false;
-
 var NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
 
 function saveHistory(status) {
@@ -201,14 +200,15 @@ function setCard(index, status, detail) {
   card.querySelector('.card-icon').className = 'card-icon ' + status;
   var statusEl = card.querySelector('.card-status');
   statusEl.className = 'card-status ' + status;
-  statusEl.innerHTML = status === 'up' ? '&#9679; Online' : '&#9679; Offline';
+  statusEl.textContent = status === 'up' ? '\u25CF Online' : '\u25CF Offline';
   if (detail) card.querySelector('.card-detail').textContent = detail;
 }
 
 function setOverall(status, text) {
   var el = document.getElementById('overall');
   el.className = 'overall ' + status;
-  el.querySelector('.overall-icon').textContent = status === 'healthy' ? '&#9989;' : status === 'degraded' ? '&#9888;&#65039;' : '&#128308;';
+  var iconMap = { healthy: '\u2705', degraded: '\u26A0\uFE0F', down: '\uD83D\uDD34' };
+  el.querySelector('.overall-icon').textContent = iconMap[status] || '\uD83D\uDD0D';
   var textEl = el.querySelector('.overall-text');
   textEl.textContent = text;
   textEl.className = 'overall-text ' + status;
@@ -235,13 +235,12 @@ async function tryConnect(url, attempt) {
   var connectBtn = document.getElementById('connectBtn');
   connectStatus.className = 'connect-status trying';
   connectStatus.textContent = 'Trying attempt ' + attempt + '/5...';
-
   try {
     var res = await safeFetch(url + '/api/status/connect', { signal: AbortSignal.timeout(5000) });
     var data = await res.json();
     if (data.success) {
       connectStatus.className = 'connect-status success';
-      connectStatus.innerHTML = '&#9989; Connected! Server is running.<br>Platform: ' + (data.server ? data.server.platform : 'unknown') + ' | Node: ' + (data.server ? data.server.nodeVersion : 'unknown');
+      connectStatus.textContent = '\u2705 Connected! Server is running. Platform: ' + (data.server ? data.server.platform : 'unknown') + ' | Node: ' + (data.server ? data.server.nodeVersion : 'unknown');
       connectBtn.classList.remove('loading');
       checkAll();
       return true;
@@ -250,7 +249,7 @@ async function tryConnect(url, attempt) {
     try {
       var res2 = await safeFetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) });
       connectStatus.className = 'connect-status success';
-      connectStatus.innerHTML = '&#9989; Server reachable! Checking status...';
+      connectStatus.textContent = '\u2705 Server reachable! Checking status...';
       connectBtn.classList.remove('loading');
       checkAll();
       return true;
@@ -280,7 +279,7 @@ async function connectToServer() {
   connectBtn.classList.remove('connecting-glow');
   if (!connected) {
     connectStatus.className = 'connect-status error';
-    connectStatus.innerHTML = '&#10060; Could not connect after 5 attempts.<br>Please start server manually using steps below.';
+    connectStatus.textContent = '\u274C Could not connect after 5 attempts. Please start server manually.';
   }
   isConnecting = false;
 }
@@ -288,7 +287,6 @@ async function connectToServer() {
 async function checkAll() {
   serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
   var upCount = 0;
-
   try {
     var res = await safeFetch(serverUrl + '/api/status', { signal: AbortSignal.timeout(8000) });
     var data = await res.json();
@@ -305,7 +303,6 @@ async function checkAll() {
     setCard(0, 'down', 'Cannot reach server');
     setCard(1, 'down', 'Cannot reach server');
   }
-
   try {
     var res2 = await safeFetch(serverUrl, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
     setCard(2, 'up', 'Port 3000 | React App');
@@ -313,7 +310,6 @@ async function checkAll() {
   } catch (e) {
     setCard(2, 'down', 'Frontend unreachable');
   }
-
   try {
     var res3 = await safeFetch(serverUrl, { signal: AbortSignal.timeout(8000) });
     var text = await res3.text();
@@ -322,14 +318,11 @@ async function checkAll() {
   } catch (e) {
     setCard(3, 'down', 'Ngrok not responding');
   }
-
   setCard(4, 'up', '12 PM & 12 AM Daily');
   upCount++;
-
   if (upCount >= 4) setOverall('healthy', 'All Systems Operational');
   else if (upCount >= 2) setOverall('degraded', 'Partial Outage');
   else setOverall('down', 'Major Outage');
-
   saveHistory(upCount >= 4 ? 'up' : upCount >= 2 ? 'degraded' : 'down');
 }
 
