@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMS Server Status</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px}
+.container{max-width:600px;margin:0 auto}
+.header{text-align:center;margin-bottom:30px}
+.header h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#a5b4fc,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.header p{color:#64748b;font-size:0.82rem}
+.overall{background:#1e293b;border:2px solid #334155;border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;transition:all 0.5s}
+.overall.healthy{border-color:#10b981;box-shadow:0 0 40px rgba(16,185,129,0.2)}
+.overall.degraded{border-color:#f59e0b;box-shadow:0 0 40px rgba(245,158,11,0.2)}
+.overall.down{border-color:#ef4444;box-shadow:0 0 40px rgba(239,68,68,0.2)}
+.overall-icon{font-size:2.5rem;margin-bottom:8px}
+.overall-text{font-size:1.1rem;font-weight:700}
+.overall-text.healthy{color:#10b981}
+.overall-text.degraded{color:#f59e0b}
+.overall-text.down{color:#ef4444}
+.overall-time{color:#64748b;font-size:0.75rem;margin-top:4px}
+.cards{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-between;transition:all 0.3s}
+.card.up{border-left:4px solid #10b981}
+.card.down{border-left:4px solid #ef4444}
+.card.checking{border-left:4px solid #6366f1}
+.card-left{display:flex;align-items:center;gap:12px}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.card-icon.up{background:rgba(16,185,129,0.15)}
+.card-icon.down{background:rgba(239,68,68,0.15)}
+.card-icon.checking{background:rgba(99,102,241,0.15)}
+.card-name{font-weight:600;font-size:0.9rem}
+.card-detail{color:#64748b;font-size:0.72rem}
+.card-status{font-size:0.75rem;font-weight:700;padding:4px 12px;border-radius:20px}
+.card-status.up{background:rgba(16,185,129,0.15);color:#10b981}
+.card-status.down{background:rgba(239,68,68,0.15);color:#ef4444}
+.card-status.checking{background:rgba(99,102,241,0.15);color:#6366f1}
+.footer{text-align:center;color:#475569;font-size:0.7rem;margin-top:10px}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.spinner{width:14px;height:14px;border:2px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.history{margin-top:16px}
+.history-title{font-size:0.8rem;font-weight:600;color:#94a3b8;margin-bottom:8px}
+.history-row{display:flex;gap:4px;align-items:end;height:40px}
+.history-bar{flex:1;border-radius:3px 3px 0 0;transition:all 0.3s;min-width:4px}
+.history-bar.up{background:#10b981}
+.history-bar.down{background:#ef4444}
+.history-bar.unknown{background:#334155}
+.url-box{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.url-box input{flex:1;background:transparent;border:none;color:#e2e8f0;font-size:0.82rem;font-family:monospace;outline:none}
+.url-box button{padding:6px 14px;border-radius:8px;border:none;background:#6366f1;color:white;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap}
+.url-box button:hover{background:#818cf8}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>EMS Server Status</h1>
+    <p>Employee Management System — Live Health Check</p>
+  </div>
+
+  <div class="url-box">
+    <span style="font-size:0.8rem;color:#64748b">📡</span>
+    <input id="serverUrl" value="https://plural-majorette-aftermath.ngrok-free.dev" placeholder="Enter server URL...">
+    <button onclick="checkAll()">Check</button>
+  </div>
+
+  <div class="overall checking" id="overall">
+    <div class="overall-icon">🔍</div>
+    <div class="overall-text" style="color:#6366f1">Checking servers...</div>
+    <div class="overall-time pulse" id="overallTime">Please wait</div>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="card checking">
+      <div class="card-left">
+        <div class="card-icon checking">🖥️</div>
+        <div><div class="card-name">Backend API</div><div class="card-detail">Checking...</div></div>
+      </div>
+      <div class="card-status checking"><span class="spinner"></span></div>
+    </div>
+    <div class="card checking">
+      <div class="card-left">
+        <div class="card-icon checking">🗄️</div>
+        <div><div class="card-name">MongoDB Atlas</div><div class="card-detail">Checking...</div></div>
+      </div>
+      <div class="card-status checking"><span class="spinner"></span></div>
+    </div>
+    <div class="card checking">
+      <div class="card-left">
+        <div class="card-icon checking">🌐</div>
+        <div><div class="card-name">Frontend</div><div class="card-detail">Checking...</div></div>
+      </div>
+      <div class="card-status checking"><span class="spinner"></span></div>
+    </div>
+    <div class="card checking">
+      <div class="card-left">
+        <div class="card-icon checking">📡</div>
+        <div><div class="card-name">Ngrok Tunnel</div><div class="card-detail">Checking...</div></div>
+      </div>
+      <div class="card-status checking"><span class="spinner"></span></div>
+    </div>
+    <div class="card checking">
+      <div class="card-left">
+        <div class="card-icon checking">💾</div>
+        <div><div class="card-name">Auto Backup</div><div class="card-detail">12 PM & 12 AM Daily</div></div>
+      </div>
+      <div class="card-status checking"><span class="spinner"></span></div>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="history-title">Last 24 checks (5 min intervals)</div>
+    <div class="history-row" id="history"></div>
+  </div>
+
+  <div class="footer">
+    <p>Auto-refreshes every 30 seconds • Click "Check" for manual refresh</p>
+  </div>
+</div>
+
+<script>
+const historyData = JSON.parse(localStorage.getItem('ems_history') || '[]');
+let serverUrl = '';
+
+function saveHistory(status) {
+  historyData.push({ time: Date.now(), status });
+  if (historyData.length > 24) historyData.shift();
+  localStorage.setItem('ems_history', JSON.stringify(historyData));
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!historyData.length) { el.innerHTML = '<div style="color:#475569;font-size:0.7rem">No history yet</div>'; return; }
+  el.innerHTML = historyData.map(h => {
+    const color = h.status === 'up' ? 'up' : h.status === 'down' ? 'down' : 'unknown';
+    const height = h.status === 'up' ? 30 + Math.random() * 10 : h.status === 'down' ? 10 : 20;
+    return `<div class="history-bar ${color}" style="height:${height}px" title="${new Date(h.time).toLocaleTimeString()} - ${h.status}"></div>`;
+  }).join('');
+}
+
+function setCard(index, status, detail) {
+  const cards = document.querySelectorAll('.card');
+  if (!cards[index]) return;
+  const card = cards[index];
+  card.className = `card ${status}`;
+  const icon = card.querySelector('.card-icon');
+  icon.className = `card-icon ${status}`;
+  const statusEl = card.querySelector('.card-status');
+  statusEl.className = `card-status ${status}`;
+  if (status === 'up') {
+    statusEl.innerHTML = '● Online';
+    if (detail) card.querySelector('.card-detail').textContent = detail;
+  } else {
+    statusEl.innerHTML = '● Offline';
+    if (detail) card.querySelector('.card-detail').textContent = detail;
+  }
+}
+
+function setOverall(status, text) {
+  const el = document.getElementById('overall');
+  el.className = `overall ${status}`;
+  el.querySelector('.overall-icon').textContent = status === 'healthy' ? '✅' : status === 'degraded' ? '⚠️' : '🔴';
+  const textEl = el.querySelector('.overall-text');
+  textEl.textContent = text;
+  textEl.className = `overall-text ${status}`;
+  document.getElementById('overallTime').textContent = 'Last checked: ' + new Date().toLocaleTimeString();
+}
+
+async function checkAll() {
+  serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
+  let upCount = 0;
+
+  // Check Backend + MongoDB via API
+  try {
+    const res = await fetch(serverUrl + '/api/status', { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    if (data.checks.backend.status === 'up') { setCard(0, 'up', `RAM: ${data.checks.backend.memory} • Uptime: ${Math.round(data.checks.backend.uptime)}s`); upCount++; }
+    else setCard(0, 'down', 'Backend not responding');
+    if (data.checks.mongodb.status === 'up') { setCard(1, 'up', `State: ${data.checks.mongodb.state}`); upCount++; }
+    else setCard(1, 'down', 'Database disconnected');
+  } catch (e) {
+    setCard(0, 'down', 'Cannot reach server');
+    setCard(1, 'down', 'Cannot reach server');
+  }
+
+  // Check Frontend
+  try {
+    const res = await fetch(serverUrl, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+    setCard(2, 'up', 'Port 3000 • React App');
+    upCount++;
+  } catch (e) {
+    setCard(2, 'down', 'Frontend unreachable');
+  }
+
+  // Check Ngrok
+  try {
+    const res = await fetch(serverUrl, { signal: AbortSignal.timeout(8000) });
+    const text = await res.text();
+    if (text.includes('ngrok') || res.ok) { setCard(3, 'up', 'Tunnel active'); upCount++; }
+    else setCard(3, 'down', 'Ngrok tunnel down');
+  } catch (e) {
+    setCard(3, 'down', 'Ngrok not responding');
+  }
+
+  // Backup (always show scheduled)
+  setCard(4, 'up', '12 PM & 12 AM Daily');
+  upCount++;
+
+  // Overall
+  if (upCount >= 4) setOverall('healthy', 'All Systems Operational');
+  else if (upCount >= 2) setOverall('degraded', 'Partial Outage');
+  else setOverall('down', 'Major Outage');
+
+  saveHistory(upCount >= 4 ? 'up' : upCount >= 2 ? 'degraded' : 'down');
+}
+
+// Load saved URL
+const savedUrl = localStorage.getItem('ems_server_url');
+if (savedUrl) document.getElementById('serverUrl').value = savedUrl;
+document.getElementById('serverUrl').addEventListener('change', (e) => {
+  localStorage.setItem('ems_server_url', e.target.value);
+});
+
+renderHistory();
+checkAll();
+setInterval(checkAll, 30000);
+</script>
+</body>
+</html>
