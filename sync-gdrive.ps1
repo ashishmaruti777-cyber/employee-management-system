@@ -1,6 +1,6 @@
 $ErrorActionPreference = "SilentlyContinue"
 
-$source = "C:\employee-management-system"
+$source = $PSScriptRoot
 $dest = "$env:USERPROFILE\Google Drive\My Drive\EMS-Project"
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -60,7 +60,7 @@ $watcher.EnableRaisingEvents = $true
 $action = {
     $path = $Event.SourceEventArgs.FullPath
     $changeType = $Event.SourceEventArgs.ChangeType
-    $relativePath = $path.Replace("C:\employee-management-system\", "")
+    $relativePath = $path.Replace("$source\", "")
     
     if ($relativePath -notlike "node_modules*" -and $relativePath -notlike "backups*") {
         $timestamp = Get-Date -Format "HH:mm:ss"

@@ -18,9 +18,16 @@ const getDbName = () => {
 exports.createBackup = async (req, res, next) => {
   try {
     const dbName = getDbName();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupName = `backup_${timestamp}`;
-    const backupPath = path.join(BACKUP_DIR, backupName);
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toISOString().replace(/[:.]/g, '-').split('T')[1];
+    const dateDir = path.join(BACKUP_DIR, dateStr);
+    const backupName = `backup_${dateStr}T${timeStr}`;
+    const backupFile = path.join(dateDir, `${backupName}.json`);
+
+    if (!fs.existsSync(dateDir)) {
+      fs.mkdirSync(dateDir, { recursive: true });
+    }
 
     const collections = await mongoose.connection.db.listCollections().toArray();
     const backupData = {};
@@ -30,7 +37,6 @@ exports.createBackup = async (req, res, next) => {
       backupData[col.name] = data;
     }
 
-    const backupFile = path.join(BACKUP_DIR, `${backupName}.json`);
     fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2));
 
     const stats = fs.statSync(backupFile);
@@ -51,12 +57,12 @@ exports.createBackup = async (req, res, next) => {
       success: true,
       data: {
         name: backupName,
-        fileName: `${backupName}.json`,
+        fileName: `${dateStr}/${backupName}.json`,
         size: stats.size,
         sizeFormatted: `${(stats.size / 1024).toFixed(2)} KB`,
         collections: collections.length,
         totalDocuments: totalDocs,
-        createdAt: new Date(),
+        createdAt: now,
       },
     });
   } catch (error) {
@@ -64,18 +70,33 @@ exports.createBackup = async (req, res, next) => {
   }
 };
 
+function walkBackupDir(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const results = [];
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...walkBackupDir(fullPath));
+    } else if (entry.name.endsWith('.json')) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
 exports.getBackups = async (req, res, next) => {
   try {
-    const files = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith('.json'));
-    const backups = files.map((file) => {
-      const filePath = path.join(BACKUP_DIR, file);
+    const files = walkBackupDir(BACKUP_DIR);
+    const backups = files.map((filePath) => {
       const stats = fs.statSync(filePath);
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       const collections = Object.keys(data);
       const totalDocs = collections.reduce((sum, col) => sum + (data[col]?.length || 0), 0);
+      const relativePath = path.relative(BACKUP_DIR, filePath);
+      const parsed = path.parse(relativePath);
       return {
-        name: file.replace('.json', ''),
-        fileName: file,
+        name: parsed.name,
+        fileName: relativePath.replace(/\\/g, '/'),
         size: stats.size,
         sizeFormatted: `${(stats.size / 1024).toFixed(2)} KB`,
         collections: collections.length,
@@ -101,7 +122,7 @@ exports.downloadBackup = async (req, res, next) => {
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(fileName)}`);
     res.sendFile(filePath);
   } catch (error) {
     next(error);
@@ -156,6 +177,11 @@ exports.deleteBackup = async (req, res, next) => {
     }
 
     fs.unlinkSync(filePath);
+
+    const parentDir = path.dirname(filePath);
+    if (parentDir !== BACKUP_DIR && fs.readdirSync(parentDir).length === 0) {
+      fs.rmdirSync(parentDir);
+    }
 
     res.json({ success: true, message: 'Backup deleted successfully' });
   } catch (error) {

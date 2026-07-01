@@ -1,5 +1,6 @@
 @echo off
-set PATH=%PATH%;C:\Program Files\nodejs
+set WATCHPACK_POLLING=true
+set CHOKIDAR_USEPOLLING=true
+set BROWSER=none
 cd /d "G:\Other computers\My PC\employee-management-system\frontend"
-echo Starting Frontend Server...
-npm start
+npx react-scripts start

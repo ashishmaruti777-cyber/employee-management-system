@@ -2,8 +2,13 @@
 title EMS - Employee Management System
 color 0A
 
+:: Use batch file's own directory as project root (portable)
+set "PROJECT_DIR=%~dp0"
+set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
+
 echo ============================================
 echo    Employee Management System
+echo    Project: %PROJECT_DIR%
 echo    Starting All Services...
 echo ============================================
 echo.
@@ -17,7 +22,7 @@ echo       Done.
 echo.
 
 :: Create logs folder
-if not exist "C:\employee-management-system\logs" mkdir "C:\employee-management-system\logs"
+if not exist "%PROJECT_DIR%\logs" mkdir "%PROJECT_DIR%\logs"
 if not exist "C:\data\db" mkdir "C:\data\db"
 
 :: Start MongoDB
@@ -34,26 +39,26 @@ echo.
 
 :: Start Backend
 echo [3/6] Starting Backend (Port 5000)...
-start "EMS-Backend" /MIN cmd /c "cd /d C:\employee-management-system\backend && node src/server.js > C:\employee-management-system\logs\backend.log 2>&1"
+start "EMS-Backend" /MIN cmd /c "cd /d "%PROJECT_DIR%\backend" && node src/server.js > "%PROJECT_DIR%\logs\backend.log" 2>&1"
 timeout /t 5 /nobreak >nul
 echo       Backend: RUNNING
 echo.
 
 :: Start Frontend
 echo [4/6] Starting Frontend (Port 3000)...
-start "EMS-Frontend" /MIN cmd /c "cd /d C:\employee-management-system\frontend && set BROWSER=none && npx react-scripts start > C:\employee-management-system\logs\frontend.log 2>&1"
+start "EMS-Frontend" /MIN cmd /c "cd /d "%PROJECT_DIR%\frontend" && set BROWSER=none && npx react-scripts start > "%PROJECT_DIR%\logs\frontend.log" 2>&1"
 echo       Frontend: Starting (30-60 sec)
 echo.
 
 :: Start Google Drive Sync
 echo [5/6] Starting Google Drive Sync...
-start "EMS-GDrive-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File C:\employee-management-system\sync-gdrive.ps1"
+start "EMS-GDrive-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File "%PROJECT_DIR%\sync-gdrive.ps1""
 echo       Google Drive Sync: ON
 echo.
 
 :: Start GitHub Auto-Sync
 echo [6/6] Starting GitHub Auto-Sync...
-start "EMS-GitHub-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File C:\employee-management-system\auto-sync-github.ps1"
+start "EMS-GitHub-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File "%PROJECT_DIR%\auto-sync-github.ps1""
 echo       GitHub Auto-Sync: ON
 echo.
 
@@ -86,14 +91,14 @@ if errorlevel 1 (
 netstat -ano | findstr ":5000" | findstr "LISTENING" >nul
 if errorlevel 1 (
     echo [%time%] Backend DOWN! Restarting...
-    start "EMS-Backend" /MIN cmd /c "cd /d C:\employee-management-system\backend && node src/server.js >> C:\employee-management-system\logs\backend.log 2>&1"
+    start "EMS-Backend" /MIN cmd /c "cd /d "%PROJECT_DIR%\backend" && node src/server.js >> "%PROJECT_DIR%\logs\backend.log" 2>&1"
     echo [%time%] Backend restarted!
 )
 
 netstat -ano | findstr ":3000" | findstr "LISTENING" >nul
 if errorlevel 1 (
     echo [%time%] Frontend DOWN! Restarting...
-    start "EMS-Frontend" /MIN cmd /c "cd /d C:\employee-management-system\frontend && set BROWSER=none && npx react-scripts start >> C:\employee-management-system\logs\frontend.log 2>&1"
+    start "EMS-Frontend" /MIN cmd /c "cd /d "%PROJECT_DIR%\frontend" && set BROWSER=none && npx react-scripts start >> "%PROJECT_DIR%\logs\frontend.log" 2>&1"
     echo [%time%] Frontend restarted!
 )
 
@@ -101,7 +106,7 @@ if errorlevel 1 (
 tasklist /FI "WINDOWTITLE eq EMS-GitHub-Sync" 2>nul | findstr "powershell" >nul
 if errorlevel 1 (
     echo [%time%] GitHub Auto-Sync DOWN! Restarting...
-    start "EMS-GitHub-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File C:\employee-management-system\auto-sync-github.ps1"
+    start "EMS-GitHub-Sync" /MIN cmd /c "powershell -ExecutionPolicy Bypass -File "%PROJECT_DIR%\auto-sync-github.ps1""
     echo [%time%] GitHub Auto-Sync restarted!
 )
 

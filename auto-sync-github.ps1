@@ -1,5 +1,5 @@
-$projectPath = "G:\Other computers\My PC\employee-management-system"
-$logFile = "G:\Other computers\My PC\employee-management-system\github-sync.log"
+$projectPath = $PSScriptRoot
+$logFile = Join-Path $projectPath "github-sync.log"
 
 function Write-Log {
     param([string]$Message)

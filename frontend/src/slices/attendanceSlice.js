@@ -89,6 +89,13 @@ const attendanceSlice = createSlice({
         const idx = state.items.findIndex(r => r._id === action.payload._id);
         if (idx !== -1) state.items[idx] = action.payload;
       })
+      .addCase(clockIn.fulfilled, (state, action) => {
+        state.items.unshift(action.payload);
+      })
+      .addCase(clockOut.fulfilled, (state, action) => {
+        const idx = state.items.findIndex(r => r._id === action.payload._id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
       .addCase(deleteAttendance.fulfilled, (state, action) => {
         state.items = state.items.filter(r => r._id !== action.payload);
       });

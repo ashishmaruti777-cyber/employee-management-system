@@ -317,9 +317,25 @@ tbody tr:last-child td { border-bottom: none; }
 .login-btn svg { width: 16px; height: 16px; }
 .login-footer { text-align: center; margin-top: 16px; font-size: 0.65rem; color: rgba(255,255,255,0.25); }
 
+.mobile-toggle {
+  display: none; position: fixed; top: 14px; left: 14px; z-index: 1001;
+  width: 40px; height: 40px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
+  cursor: pointer; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+  transition: all 0.2s;
+}
+.mobile-toggle:hover { transform: scale(1.05); }
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+}
+
 @media (max-width: 768px) {
-  .sidebar { display: none; }
-  .main-content { margin-left: 0; padding: 12px; }
+  .mobile-toggle { display: flex; align-items: center; justify-content: center; }
+  .sidebar { transform: translateX(-100%); z-index: 1000; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.open { display: block; }
+  .main-content { margin-left: 0; padding: 12px; padding-top: 60px; }
   .charts-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .topbar { flex-direction: column; gap: 8px; align-items: flex-start; }

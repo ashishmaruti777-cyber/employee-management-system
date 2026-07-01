@@ -42,6 +42,8 @@ const Attendance = () => {
     try {
       await dispatch(clockIn(myProfile._id)).unwrap();
       toast.success('Clocked in successfully!');
+      dispatch(fetchAttendance({ page: 1, limit: 200, startDate: selectedDate, endDate: selectedDate }));
+      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Clock in failed');
     }
@@ -51,6 +53,8 @@ const Attendance = () => {
     try {
       await dispatch(clockOut(myProfile._id)).unwrap();
       toast.success('Clocked out successfully!');
+      dispatch(fetchAttendance({ page: 1, limit: 200, startDate: selectedDate, endDate: selectedDate }));
+      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Clock out failed');
     }
@@ -253,6 +257,7 @@ const Attendance = () => {
         const newRecord = await dispatch(createAtt({ employee: empId, date: selectedDate, status })).unwrap();
       }
       toast.success(`Marked as ${status}!`);
+      dispatch(fetchAttendanceSummary({ startDate: selectedDate, endDate: selectedDate }));
     } catch (err) {
       toast.error(err || 'Failed');
     }

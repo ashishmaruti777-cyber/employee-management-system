@@ -8,15 +8,15 @@ router.use(protect);
 
 router.route('/')
   .get(getRoles)
-  .post(authorize('super-admin'), validateRole, createRole);
+  .post(checkPermission('roles', 'create'), validateRole, createRole);
 
 router.route('/:id')
   .get(getRole)
-  .put(authorize('super-admin'), validateRoleUpdate, updateRole)
-  .delete(authorize('super-admin'), deleteRole);
+  .put(checkPermission('roles', 'update'), validateRoleUpdate, updateRole)
+  .delete(checkPermission('roles', 'delete'), deleteRole);
 
-router.put('/:id/toggle', authorize('super-admin'), toggleRoleStatus);
+router.put('/:id/toggle', checkPermission('roles', 'update'), toggleRoleStatus);
 
-router.get('/audit-logs', authorize('super-admin'), getAuditLogs);
+router.get('/audit-logs', checkPermission('roles', 'read'), getAuditLogs);
 
 module.exports = router;
