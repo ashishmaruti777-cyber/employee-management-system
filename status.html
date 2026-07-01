@@ -98,22 +98,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="overall-time pulse" id="overallTime">Please wait</div>
   </div>
 
-  <!-- Connect Section - shows when server is offline -->
   <div class="connect-section" id="connectSection">
     <div style="font-size:2rem;margin-bottom:8px">&#128268;</div>
     <div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;color:#e2e8f0">Server Offline</div>
     <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:16px">Click below to try connecting</div>
-    
     <button class="connect-btn" id="connectBtn" onclick="connectToServer()">
       <div class="spinner"></div>
       <span class="btn-text">&#128279; Connect to Server</span>
     </button>
-    
     <div class="connect-status" id="connectStatus"></div>
     <div class="connect-info">Will try 5 times with 3 second gaps</div>
   </div>
 
-  <!-- Manual Steps - shows when offline -->
   <div class="manual-section" id="manualSection" style="display:none">
     <div class="manual-title">&#128187; Manual Server Start Steps</div>
     <ol class="manual-steps">
@@ -174,58 +170,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-const historyData = JSON.parse(localStorage.getItem('ems_history') || '[]');
-let serverUrl = '';
-let isConnecting = false;
-let autoCheckInterval = null;
+var historyData = JSON.parse(localStorage.getItem('ems_history') || '[]');
+var serverUrl = '';
+var isConnecting = false;
+
+var NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
 
 function saveHistory(status) {
-  historyData.push({ time: Date.now(), status });
+  historyData.push({ time: Date.now(), status: status });
   if (historyData.length > 24) historyData.shift();
   localStorage.setItem('ems_history', JSON.stringify(historyData));
   renderHistory();
 }
 
 function renderHistory() {
-  const el = document.getElementById('history');
+  var el = document.getElementById('history');
   if (!historyData.length) { el.innerHTML = '<div style="color:#475569;font-size:0.7rem">No history yet</div>'; return; }
-  el.innerHTML = historyData.map(h => {
-    const color = h.status === 'up' ? 'up' : h.status === 'down' ? 'down' : 'unknown';
-    const height = h.status === 'up' ? 30 + Math.random() * 10 : h.status === 'down' ? 10 : 20;
+  el.innerHTML = historyData.map(function(h) {
+    var color = h.status === 'up' ? 'up' : h.status === 'down' ? 'down' : 'unknown';
+    var height = h.status === 'up' ? 30 + Math.random() * 10 : h.status === 'down' ? 10 : 20;
     return '<div class="history-bar ' + color + '" style="height:' + height + 'px" title="' + new Date(h.time).toLocaleTimeString() + ' - ' + h.status + '"></div>';
   }).join('');
 }
 
 function setCard(index, status, detail) {
-  const cards = document.querySelectorAll('.card');
+  var cards = document.querySelectorAll('.card');
   if (!cards[index]) return;
-  const card = cards[index];
+  var card = cards[index];
   card.className = 'card ' + status;
-  const icon = card.querySelector('.card-icon');
-  icon.className = 'card-icon ' + status;
-  const statusEl = card.querySelector('.card-status');
+  card.querySelector('.card-icon').className = 'card-icon ' + status;
+  var statusEl = card.querySelector('.card-status');
   statusEl.className = 'card-status ' + status;
-  if (status === 'up') {
-    statusEl.innerHTML = '&#9679; Online';
-    if (detail) card.querySelector('.card-detail').textContent = detail;
-  } else {
-    statusEl.innerHTML = '&#9679; Offline';
-    if (detail) card.querySelector('.card-detail').textContent = detail;
-  }
+  statusEl.innerHTML = status === 'up' ? '&#9679; Online' : '&#9679; Offline';
+  if (detail) card.querySelector('.card-detail').textContent = detail;
 }
 
 function setOverall(status, text) {
-  const el = document.getElementById('overall');
+  var el = document.getElementById('overall');
   el.className = 'overall ' + status;
   el.querySelector('.overall-icon').textContent = status === 'healthy' ? '&#9989;' : status === 'degraded' ? '&#9888;&#65039;' : '&#128308;';
-  const textEl = el.querySelector('.overall-text');
+  var textEl = el.querySelector('.overall-text');
   textEl.textContent = text;
   textEl.className = 'overall-text ' + status;
   document.getElementById('overallTime').textContent = 'Last checked: ' + new Date().toLocaleTimeString();
-  
-  // Show/hide connect section
-  const connectSection = document.getElementById('connectSection');
-  const manualSection = document.getElementById('manualSection');
+  var connectSection = document.getElementById('connectSection');
+  var manualSection = document.getElementById('manualSection');
   if (status === 'down') {
     connectSection.classList.add('show');
     manualSection.style.display = 'block';
@@ -235,29 +224,31 @@ function setOverall(status, text) {
   }
 }
 
+async function safeFetch(url, opts) {
+  var headers = Object.assign({}, NGROK_HEADERS, (opts && opts.headers) || {});
+  var finalOpts = Object.assign({}, opts || {}, { headers: headers });
+  return fetch(url, finalOpts);
+}
+
 async function tryConnect(url, attempt) {
-  const connectStatus = document.getElementById('connectStatus');
-  const connectBtn = document.getElementById('connectBtn');
-  
+  var connectStatus = document.getElementById('connectStatus');
+  var connectBtn = document.getElementById('connectBtn');
   connectStatus.className = 'connect-status trying';
   connectStatus.textContent = 'Trying attempt ' + attempt + '/5...';
-  
+
   try {
-    // Try the connect endpoint first
-    const res = await fetch(url + '/api/status/connect', { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    
+    var res = await safeFetch(url + '/api/status/connect', { signal: AbortSignal.timeout(5000) });
+    var data = await res.json();
     if (data.success) {
       connectStatus.className = 'connect-status success';
       connectStatus.innerHTML = '&#9989; Connected! Server is running.<br>Platform: ' + (data.server ? data.server.platform : 'unknown') + ' | Node: ' + (data.server ? data.server.nodeVersion : 'unknown');
       connectBtn.classList.remove('loading');
-      checkAll(); // Refresh status
+      checkAll();
       return true;
     }
   } catch (e) {
-    // Try root URL as fallback
     try {
-      const res = await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) });
+      var res2 = await safeFetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) });
       connectStatus.className = 'connect-status success';
       connectStatus.innerHTML = '&#9989; Server reachable! Checking status...';
       connectBtn.classList.remove('loading');
@@ -274,73 +265,67 @@ async function tryConnect(url, attempt) {
 async function connectToServer() {
   if (isConnecting) return;
   isConnecting = true;
-  
-  const connectBtn = document.getElementById('connectBtn');
-  const connectStatus = document.getElementById('connectStatus');
-  
+  var connectBtn = document.getElementById('connectBtn');
+  var connectStatus = document.getElementById('connectStatus');
   connectBtn.classList.add('loading');
   connectBtn.classList.add('connecting-glow');
   serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
-  
-  let connected = false;
-  for (let i = 1; i <= 5; i++) {
+  var connected = false;
+  for (var i = 1; i <= 5; i++) {
     connected = await tryConnect(serverUrl, i);
     if (connected) break;
-    if (i < 5) await new Promise(r => setTimeout(r, 3000));
+    if (i < 5) await new Promise(function(r) { setTimeout(r, 3000); });
   }
-  
   connectBtn.classList.remove('loading');
   connectBtn.classList.remove('connecting-glow');
-  
   if (!connected) {
     connectStatus.className = 'connect-status error';
     connectStatus.innerHTML = '&#10060; Could not connect after 5 attempts.<br>Please start server manually using steps below.';
   }
-  
   isConnecting = false;
 }
 
 async function checkAll() {
   serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
-  let upCount = 0;
+  var upCount = 0;
 
-  // Check Backend + MongoDB via API
   try {
-    const res = await fetch(serverUrl + '/api/status', { signal: AbortSignal.timeout(8000) });
-    const data = await res.json();
-    if (data.checks.backend.status === 'up') { setCard(0, 'up', 'RAM: ' + data.checks.backend.memory + ' | Uptime: ' + Math.round(data.checks.backend.uptime) + 's'); upCount++; }
-    else setCard(0, 'down', 'Backend not responding');
-    if (data.checks.mongodb.status === 'up') { setCard(1, 'up', 'State: ' + data.checks.mongodb.state); upCount++; }
-    else setCard(1, 'down', 'Database disconnected');
+    var res = await safeFetch(serverUrl + '/api/status', { signal: AbortSignal.timeout(8000) });
+    var data = await res.json();
+    if (data.success && data.checks) {
+      if (data.checks.backend && data.checks.backend.status === 'up') { setCard(0, 'up', 'RAM: ' + data.checks.backend.memory + ' | Uptime: ' + Math.round(data.checks.backend.uptime) + 's'); upCount++; }
+      else setCard(0, 'down', 'Backend not responding');
+      if (data.checks.mongodb && data.checks.mongodb.status === 'up') { setCard(1, 'up', 'State: ' + data.checks.mongodb.state); upCount++; }
+      else setCard(1, 'down', 'Database disconnected');
+    } else {
+      setCard(0, 'down', 'Invalid response');
+      setCard(1, 'down', 'Invalid response');
+    }
   } catch (e) {
     setCard(0, 'down', 'Cannot reach server');
     setCard(1, 'down', 'Cannot reach server');
   }
 
-  // Check Frontend
   try {
-    const res = await fetch(serverUrl, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+    var res2 = await safeFetch(serverUrl, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
     setCard(2, 'up', 'Port 3000 | React App');
     upCount++;
   } catch (e) {
     setCard(2, 'down', 'Frontend unreachable');
   }
 
-  // Check Ngrok
   try {
-    const res = await fetch(serverUrl, { signal: AbortSignal.timeout(8000) });
-    const text = await res.text();
-    if (text.includes('ngrok') || res.ok) { setCard(3, 'up', 'Tunnel active'); upCount++; }
+    var res3 = await safeFetch(serverUrl, { signal: AbortSignal.timeout(8000) });
+    var text = await res3.text();
+    if (text.includes('ngrok') || res3.ok) { setCard(3, 'up', 'Tunnel active'); upCount++; }
     else setCard(3, 'down', 'Ngrok tunnel down');
   } catch (e) {
     setCard(3, 'down', 'Ngrok not responding');
   }
 
-  // Backup (always show scheduled)
   setCard(4, 'up', '12 PM & 12 AM Daily');
   upCount++;
 
-  // Overall
   if (upCount >= 4) setOverall('healthy', 'All Systems Operational');
   else if (upCount >= 2) setOverall('degraded', 'Partial Outage');
   else setOverall('down', 'Major Outage');
@@ -348,8 +333,7 @@ async function checkAll() {
   saveHistory(upCount >= 4 ? 'up' : upCount >= 2 ? 'degraded' : 'down');
 }
 
-// Load saved URL
-const savedUrl = localStorage.getItem('ems_server_url');
+var savedUrl = localStorage.getItem('ems_server_url');
 if (savedUrl) document.getElementById('serverUrl').value = savedUrl;
 document.getElementById('serverUrl').addEventListener('change', function(e) {
   localStorage.setItem('ems_server_url', e.target.value);
@@ -357,7 +341,7 @@ document.getElementById('serverUrl').addEventListener('change', function(e) {
 
 renderHistory();
 checkAll();
-autoCheckInterval = setInterval(checkAll, 30000);
+setInterval(checkAll, 30000);
 </script>
 </body>
 </html>
