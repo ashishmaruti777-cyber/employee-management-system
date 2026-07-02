@@ -19,15 +19,20 @@ async function backupAll() {
     fs.mkdirSync(dateDir, { recursive: true });
   }
 
+  // Single file with all collections
+  const backupData = {};
   for (const col of collections) {
     const name = col.name;
     const docs = await db.collection(name).find({}).toArray();
-    const filePath = path.join(dateDir, `backup_${name}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(docs, null, 2));
-    console.log(`  ${name}: ${docs.length} records -> ${filePath}`);
+    backupData[name] = docs;
+    console.log(`  ${name}: ${docs.length} records`);
   }
 
-  // Cleanup: keep last 7 days
+  const filePath = path.join(dateDir, 'backup.json');
+  fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2));
+  console.log(`\nSingle backup file: ${filePath} (${(fs.statSync(filePath).size / 1024).toFixed(1)} KB)`);
+
+  // Cleanup: keep last 7 days only
   const allDirs = fs.readdirSync(BACKUP_DIR).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
   while (allDirs.length > 7) {
     const old = allDirs.shift();
